@@ -1,0 +1,131 @@
+:root {
+  font-family: 'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* Marca de agua global centrada (pantalla y también válida para impresión) */
+.main-watermark-wrapper { position: relative; }
+.global-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 60%;
+  opacity: 0.06;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+}
+.with-watermark-content { position: relative; z-index: 1; }
+
+/* Tamaño de página para impresión: Carta con márgenes mínimos */
+@page {
+  size: Letter;
+  margin: 10mm;
+}
+
+/* Marca de agua oculta por defecto en pantalla para facturas (se mostrará solo en print) */
+.invoice .watermark {
+  display: none;
+}
+
+@media print {
+  /* Utilidades existentes */
+  .print-hidden {
+    display: none !important;
+  }
+  
+  .print-shadow-none {
+    box-shadow: none !important;
+  }
+  
+  .print-px-0 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* Asegurar impresión fiel de colores/fondos */
+  html, body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-size: 12px !important; /* Compactar tipografía general */
+    line-height: 1.35 !important;
+  }
+
+  /* Ocultar navegación y cromo de la app */
+  .MuiDrawer-root,
+  .MuiAppBar-root {
+    display: none !important;
+  }
+
+  /* Hacer que el contenido principal ocupe todo el ancho al imprimir */
+  .print-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* Contenedores sin gutters al imprimir */
+  .MuiContainer-root {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* Ocultar controles típicos (botones/iconos) si se marca con clase */
+  .print-controls {
+    display: none !important;
+  }
+
+  /* Marca de agua centrada detrás del contenido en facturas */
+  .invoice {
+    position: relative;
+    padding: 16px !important; /* reducir padding del contenedor principal */
+  }
+  .invoice .watermark {
+    display: block !important;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70%;
+    opacity: 0.06;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .invoice .invoice-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Compactar secciones internas */
+  .invoice .MuiPaper-root {
+    padding: 12px !important; /* antes 24px/32px */
+  }
+  .invoice .MuiBox-root {
+    margin-bottom: 10px !important; /* reducir separación vertical */
+  }
+  .invoice .MuiTypography-h4 { font-size: 20px !important; }
+  .invoice .MuiTypography-h6 { font-size: 14px !important; }
+
+  /* Compactar tablas */
+  .invoice .MuiTableCell-root {
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+
+  /* Evitar saltos molestos dentro de cajas importantes */
+  .invoice .MuiPaper-root,
+  .invoice .MuiGrid-container,
+  .invoice .MuiTableContainer-root {
+    break-inside: avoid; /* estándar */
+    page-break-inside: avoid; /* fallback */
+  }
+}
