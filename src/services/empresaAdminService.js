@@ -12,6 +12,11 @@ export const getEmpresaUsuariosAdmin = async (empresaId) => {
   return response.data;
 };
 
+export const getUsuariosGlobalAdmin = async (params) => {
+  const response = await api.get(`${ENDPOINT}/usuarios`, { params });
+  return response.data;
+};
+
 export const aprobarEmpresaAdmin = async (empresaId) => {
   const response = await api.patch(`${ENDPOINT}/${empresaId}/aprobar`);
   return response.data;

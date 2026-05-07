@@ -1,6 +1,24 @@
 import { useContext, useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FaSignOutAlt, FaUser, FaUserTie, FaUserShield, FaUserCog } from 'react-icons/fa';
+import {
+  FaSignOutAlt,
+  FaUser,
+  FaUserTie,
+  FaUserShield,
+  FaUserCog,
+  FaUserSecret,
+  FaUserNinja,
+  FaUserAstronaut,
+  FaUserGraduate,
+  FaUserMd,
+  FaUserTag,
+  FaUserFriends,
+  FaUserClock,
+  FaUserCheck,
+  FaUserEdit,
+  FaUserPlus,
+  FaUserMinus,
+} from 'react-icons/fa';
 import AuthContext from '../context/AuthContext';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
@@ -29,10 +47,25 @@ const getIconoPorRol = (rol) => {
 
 const getUserIconComponent = (user) => {
   const key = user?.icono || getIconoPorRol(user?.rol);
-  if (key === 'userTie') return FaUserTie;
-  if (key === 'userShield') return FaUserShield;
-  if (key === 'userCog') return FaUserCog;
-  return FaUser;
+  const map = {
+    user: FaUser,
+    userTie: FaUserTie,
+    userShield: FaUserShield,
+    userCog: FaUserCog,
+    userSecret: FaUserSecret,
+    userNinja: FaUserNinja,
+    userAstronaut: FaUserAstronaut,
+    userGraduate: FaUserGraduate,
+    userMd: FaUserMd,
+    userTag: FaUserTag,
+    userFriends: FaUserFriends,
+    userClock: FaUserClock,
+    userCheck: FaUserCheck,
+    userEdit: FaUserEdit,
+    userPlus: FaUserPlus,
+    userMinus: FaUserMinus,
+  };
+  return map[key] || FaUser;
 };
 
 const Navbar = ({ onToggleColorMode, mode, sidebarCollapsed, onToggleSidebarCollapsed }) => {

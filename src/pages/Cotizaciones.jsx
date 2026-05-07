@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FaPlus, FaExchangeAlt, FaEye, FaEdit } from 'react-icons/fa';
+import { FaPlus, FaExchangeAlt, FaEye, FaEdit, FaPrint } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import {
   Box,
@@ -34,43 +34,26 @@ import {
   getCotizaciones,
   getCotizacionById,
   createCotizacion,
-  convertirCotizacionAVenta,
   updateCotizacion,
 } from '../services/cotizacionService';
-import { getRelacionesFacturaConsecutivo } from '../services/facturaConsecutivoService';
 
 const Cotizaciones = () => {
   const [cotizaciones, setCotizaciones] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [productos, setProductos] = useState([]);
-  const [relacionesFC, setRelacionesFC] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [openNueva, setOpenNueva] = useState(false);
   const [editingCotizacionId, setEditingCotizacionId] = useState('');
   const [editingCotizacion, setEditingCotizacion] = useState(null);
-  const [openConvertir, setOpenConvertir] = useState(false);
-  const [cotizacionSeleccionada, setCotizacionSeleccionada] = useState(null);
   const [openVer, setOpenVer] = useState(false);
   const [cotizacionVer, setCotizacionVer] = useState(null);
   const [loadingVer, setLoadingVer] = useState(false);
 
   const [formNueva, setFormNueva] = useState({
     cliente: '',
-    productos: [],
-  });
-
-  const [formConvertir, setFormConvertir] = useState({
-    facturaHasConsecutivo: '',
     tipoDeServicio: '',
-    duracionDelEvento: '',
-    fechaDelEvento: '',
-    fechaInicio: '',
-    fechaFin: '',
-    descuento: 0,
-    abono: 0,
-    clienteTelefono: '',
-    clienteDireccion: '',
+    productos: [],
   });
 
   const location = useLocation();
@@ -82,16 +65,14 @@ const Cotizaciones = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [cotz, cls, prods, rels] = await Promise.all([
+        const [cotz, cls, prods] = await Promise.all([
           getCotizaciones(),
           getClientes(),
           getProductos(),
-          getRelacionesFacturaConsecutivo(),
         ]);
         setCotizaciones(cotz);
         setClientes(cls);
         setProductos(prods);
-        setRelacionesFC(rels);
       } catch (error) {
         toast.error(error.response?.data?.message || 'Error al cargar datos de cotizaciones');
         console.error('Error cotizaciones:', error);
@@ -119,12 +100,25 @@ const Cotizaciones = () => {
     );
   };
 
+  const mapTipoServicio = (value) => {
+    if (value === 'Evento') return 'Alquiler';
+    return value;
+  };
+
+  const productosFiltrados = productos.filter((p) => {
+    const servicio = mapTipoServicio(formNueva.tipoDeServicio);
+    if (!servicio) return true;
+    if (!p.tipoDeServicio) return true;
+    return p.tipoDeServicio === servicio;
+  });
+
   const handleOpenNueva = (cotizacion = null) => {
     if (cotizacion) {
       setEditingCotizacionId(cotizacion._id);
       setEditingCotizacion(cotizacion);
       setFormNueva({
         cliente: cotizacion.cliente?._id || cotizacion.cliente || '',
+        tipoDeServicio: cotizacion.tipoDeServicio || '',
         productos: (cotizacion.productos || []).map((p) => ({
           producto: p.producto?._id || p.producto || '',
           cantidad: Number(p.cantidad) || 1,
@@ -137,6 +131,7 @@ const Cotizaciones = () => {
       setEditingCotizacion(null);
       setFormNueva({
         cliente: '',
+        tipoDeServicio: '',
         productos: [],
       });
     }
@@ -150,6 +145,10 @@ const Cotizaciones = () => {
   };
 
   const handleAddProducto = () => {
+    if (!formNueva.tipoDeServicio) {
+      toast.error('Seleccione primero el tipo de servicio');
+      return;
+    }
     setFormNueva((prev) => ({
       ...prev,
       productos: [
@@ -162,7 +161,20 @@ const Cotizaciones = () => {
   const handleChangeProducto = (index, field, value) => {
     setFormNueva((prev) => {
       const updated = [...prev.productos];
-      const item = { ...updated[index], [field]: value };
+      const prevItem = updated[index] || {
+        producto: '',
+        cantidad: 1,
+        precioUnitario: 0,
+        subtotal: 0,
+      };
+      const item = { ...prevItem, [field]: value };
+
+      if (field === 'producto') {
+        const productoSeleccionado = productos.find((p) => p._id === value);
+        const precioAuto = Number(productoSeleccionado?.precio) || 0;
+        item.precioUnitario = precioAuto;
+      }
+
       const cantidad = Number(item.cantidad) || 0;
       const precio = Number(item.precioUnitario) || 0;
       item.subtotal = cantidad * precio;
@@ -181,8 +193,8 @@ const Cotizaciones = () => {
 
   const handleSubmitNueva = async () => {
     try {
-      if (!formNueva.cliente || formNueva.productos.length === 0) {
-        toast.error('Seleccione cliente y al menos un producto');
+      if (!formNueva.cliente || !formNueva.tipoDeServicio || formNueva.productos.length === 0) {
+        toast.error('Seleccione cliente, tipo de servicio y al menos un producto');
         return;
       }
 
@@ -190,6 +202,7 @@ const Cotizaciones = () => {
 
       const payload = {
         cliente: formNueva.cliente,
+        tipoDeServicio: formNueva.tipoDeServicio,
         productos: formNueva.productos.map((p) => ({
           producto: p.producto,
           cantidad: Number(p.cantidad) || 0,
@@ -238,83 +251,6 @@ const Cotizaciones = () => {
     setOpenVer(false);
     setCotizacionVer(null);
     setLoadingVer(false);
-  };
-
-  const handleOpenConvertir = (cotizacion) => {
-    setCotizacionSeleccionada(cotizacion);
-    setFormConvertir({
-      facturaHasConsecutivo: '',
-      tipoDeServicio: '',
-      duracionDelEvento: '',
-      fechaDelEvento: '',
-      fechaInicio: '',
-      fechaFin: '',
-      descuento: 0,
-      abono: 0,
-      clienteTelefono: cotizacion.cliente?.telefono || '',
-      clienteDireccion: cotizacion.cliente?.direccion || '',
-    });
-    setOpenConvertir(true);
-  };
-
-  const handleCloseConvertir = () => {
-    setOpenConvertir(false);
-  };
-
-  const handleChangeConvertir = (e) => {
-    const { name, value } = e.target;
-    setFormConvertir((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmitConvertir = async () => {
-    try {
-      const {
-        facturaHasConsecutivo,
-        tipoDeServicio,
-        duracionDelEvento,
-        fechaDelEvento,
-        fechaInicio,
-        fechaFin,
-        descuento,
-        abono,
-        clienteTelefono,
-        clienteDireccion,
-      } = formConvertir;
-
-      if (
-        !facturaHasConsecutivo ||
-        !tipoDeServicio ||
-        !duracionDelEvento ||
-        !fechaDelEvento ||
-        !fechaInicio ||
-        !fechaFin
-      ) {
-        toast.error('Complete los campos requeridos para la venta');
-        return;
-      }
-
-      const payload = {
-        facturaHasConsecutivo,
-        tipoDeServicio,
-        duracionDelEvento,
-        fechaDelEvento,
-        fechaInicio,
-        fechaFin,
-        descuento: Number(descuento) || 0,
-        abono: Number(abono) || 0,
-        clienteTelefono,
-        clienteDireccion,
-      };
-
-      await convertirCotizacionAVenta(cotizacionSeleccionada._id, payload);
-      toast.success('Cotización convertida a venta');
-      setOpenConvertir(false);
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || 'Error al convertir la cotización'
-      );
-      console.error('Error convertir cotización:', error);
-    }
   };
 
   const handleCambioEstado = async (cotizacion, nuevoEstado) => {
@@ -448,10 +384,23 @@ const Cotizaciones = () => {
                         <Tooltip title="Convertir esta cotización en una venta con consecutivo">
                           <IconButton
                             color="primary"
-                            onClick={() => handleOpenConvertir(c)}
+                            onClick={() =>
+                              navigate(`/ventas/nueva?fromCotizacion=${c._id}`, {
+                                state: { fromCotizacion: c },
+                              })
+                            }
                             sx={{ mr: 1 }}
                           >
                             <FaExchangeAlt />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Imprimir cotización">
+                          <IconButton
+                            color="secondary"
+                            onClick={() => navigate(`/cotizaciones/ver/${c._id}?print=1`)}
+                            sx={{ mr: 1 }}
+                          >
+                            <FaPrint />
                           </IconButton>
                         </Tooltip>
                         {c.estado !== 'rechazada' && (
@@ -517,6 +466,27 @@ const Cotizaciones = () => {
             </Select>
           </FormControl>
 
+          <FormControl margin="normal" fullWidth>
+            <InputLabel id="tipo-servicio-label">Tipo de servicio</InputLabel>
+            <Select
+              labelId="tipo-servicio-label"
+              id="tipoDeServicio"
+              name="tipoDeServicio"
+              value={formNueva.tipoDeServicio}
+              label="Tipo de servicio"
+              onChange={(e) =>
+                setFormNueva((prev) => ({
+                  ...prev,
+                  tipoDeServicio: e.target.value,
+                  productos: [],
+                }))
+              }
+            >
+              <MenuItem value="Venta">Venta</MenuItem>
+              <MenuItem value="Alquiler">Alquiler</MenuItem>
+            </Select>
+          </FormControl>
+
           <Box sx={{ mt: 2, mb: 1, display: 'flex', justifyContent: 'space-between' }}>
             <Typography variant="subtitle1">Productos</Typography>
             <Tooltip title="Agregar un producto a la cotización">
@@ -540,7 +510,7 @@ const Cotizaciones = () => {
                         handleChangeProducto(index, 'producto', e.target.value)
                       }
                     >
-                      {productos.map((p) => (
+                      {productosFiltrados.map((p) => (
                         <MenuItem key={p._id} value={p._id}>
                           {p.nombre}
                         </MenuItem>
@@ -624,10 +594,21 @@ const Cotizaciones = () => {
                 Estado: {cotizacionVer.estado || 'borrador'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
+                Tipo de servicio: {cotizacionVer.tipoDeServicio || '-'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
                 Creada:{' '}
                 {cotizacionVer.createdAt
                   ? new Date(cotizacionVer.createdAt).toLocaleString()
                   : '-'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Fecha de expedición:{' '}
+                {cotizacionVer.fechaExpedicion
+                  ? new Date(cotizacionVer.fechaExpedicion).toLocaleString()
+                  : cotizacionVer.createdAt
+                    ? new Date(cotizacionVer.createdAt).toLocaleString()
+                    : '-'}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Última edición:{' '}
@@ -661,6 +642,14 @@ const Cotizaciones = () => {
           {cotizacionVer && (
             <Button
               variant="outlined"
+              onClick={() => navigate(`/cotizaciones/ver/${cotizacionVer._id}?print=1`)}
+            >
+              Imprimir
+            </Button>
+          )}
+          {cotizacionVer && (
+            <Button
+              variant="outlined"
               onClick={() => {
                 handleCloseVer();
                 handleOpenNueva(cotizacionVer);
@@ -670,123 +659,6 @@ const Cotizaciones = () => {
             </Button>
           )}
           <Button onClick={handleCloseVer}>Cerrar</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Modal convertir a venta */}
-      <Dialog
-        open={openConvertir}
-        onClose={handleCloseConvertir}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>Convertir a venta</DialogTitle>
-        <DialogContent>
-          <FormControl margin="normal" fullWidth>
-            <InputLabel id="fc-label">Factura / Consecutivo</InputLabel>
-            <Select
-              labelId="fc-label"
-              id="facturaHasConsecutivo"
-              name="facturaHasConsecutivo"
-              value={formConvertir.facturaHasConsecutivo}
-              label="Factura / Consecutivo"
-              onChange={handleChangeConvertir}
-            >
-              {relacionesFC.map((r) => (
-                <MenuItem key={r._id} value={r._id}>
-                  {r.factura?.nombre} - {r.consecutivo?.contador}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <TextField
-            margin="normal"
-            fullWidth
-            name="tipoDeServicio"
-            label="Tipo de servicio"
-            value={formConvertir.tipoDeServicio}
-            onChange={handleChangeConvertir}
-          />
-          <TextField
-            margin="normal"
-            fullWidth
-            name="duracionDelEvento"
-            label="Duración del evento"
-            value={formConvertir.duracionDelEvento}
-            onChange={handleChangeConvertir}
-          />
-          <TextField
-            margin="normal"
-            fullWidth
-            name="fechaDelEvento"
-            label="Fecha del evento"
-            type="date"
-            InputLabelProps={{ shrink: true }}
-            value={formConvertir.fechaDelEvento}
-            onChange={handleChangeConvertir}
-          />
-          <TextField
-            margin="normal"
-            fullWidth
-            name="fechaInicio"
-            label="Fecha inicio (montaje)"
-            type="date"
-            InputLabelProps={{ shrink: true }}
-            value={formConvertir.fechaInicio}
-            onChange={handleChangeConvertir}
-          />
-          <TextField
-            margin="normal"
-            fullWidth
-            name="fechaFin"
-            label="Fecha fin (desmontaje)"
-            type="date"
-            InputLabelProps={{ shrink: true }}
-            value={formConvertir.fechaFin}
-            onChange={handleChangeConvertir}
-          />
-
-          <TextField
-            margin="normal"
-            fullWidth
-            name="descuento"
-            label="Descuento"
-            type="number"
-            value={formConvertir.descuento}
-            onChange={handleChangeConvertir}
-          />
-          <TextField
-            margin="normal"
-            fullWidth
-            name="abono"
-            label="Abono"
-            type="number"
-            value={formConvertir.abono}
-            onChange={handleChangeConvertir}
-          />
-          <TextField
-            margin="normal"
-            fullWidth
-            name="clienteTelefono"
-            label="Teléfono cliente"
-            value={formConvertir.clienteTelefono}
-            onChange={handleChangeConvertir}
-          />
-          <TextField
-            margin="normal"
-            fullWidth
-            name="clienteDireccion"
-            label="Dirección cliente"
-            value={formConvertir.clienteDireccion}
-            onChange={handleChangeConvertir}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseConvertir}>Cancelar</Button>
-          <Button onClick={handleSubmitConvertir} variant="contained">
-            Convertir
-          </Button>
         </DialogActions>
       </Dialog>
     </Container>

@@ -1,5 +1,25 @@
-import { useContext, useEffect, useState } from 'react';
-import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
+import { useContext, useEffect, useRef, useState } from 'react';
+import {
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaUser,
+  FaUserTie,
+  FaUserShield,
+  FaUserCog,
+  FaUserSecret,
+  FaUserNinja,
+  FaUserAstronaut,
+  FaUserGraduate,
+  FaUserMd,
+  FaUserTag,
+  FaUserFriends,
+  FaUserClock,
+  FaUserCheck,
+  FaUserEdit,
+  FaUserPlus,
+  FaUserMinus,
+} from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import {
   Box,
@@ -39,10 +59,22 @@ import api from '../services/api';
 
 const INDICATIVOS_COMUNES = ['+57', '+1', '+52', '+34', '+51', '+54', '+56', '+58'];
 const ICONOS_USUARIO = [
-  { value: 'user', label: 'Usuario' },
-  { value: 'userTie', label: 'Admin' },
-  { value: 'userShield', label: 'Superadmin' },
-  { value: 'userCog', label: 'Operador' },
+  { value: 'user', label: 'Usuario', Icon: FaUser },
+  { value: 'userTie', label: 'Admin', Icon: FaUserTie },
+  { value: 'userShield', label: 'Superadmin', Icon: FaUserShield },
+  { value: 'userCog', label: 'Operador', Icon: FaUserCog },
+  { value: 'userSecret', label: 'Secreto', Icon: FaUserSecret },
+  { value: 'userNinja', label: 'Ninja', Icon: FaUserNinja },
+  { value: 'userAstronaut', label: 'Astronauta', Icon: FaUserAstronaut },
+  { value: 'userGraduate', label: 'Graduado', Icon: FaUserGraduate },
+  { value: 'userMd', label: 'Médico', Icon: FaUserMd },
+  { value: 'userTag', label: 'Etiqueta', Icon: FaUserTag },
+  { value: 'userFriends', label: 'Equipo', Icon: FaUserFriends },
+  { value: 'userClock', label: 'Tiempo', Icon: FaUserClock },
+  { value: 'userCheck', label: 'Verificado', Icon: FaUserCheck },
+  { value: 'userEdit', label: 'Editor', Icon: FaUserEdit },
+  { value: 'userPlus', label: 'Nuevo', Icon: FaUserPlus },
+  { value: 'userMinus', label: 'Baja', Icon: FaUserMinus },
 ];
 
 const MODULOS_PERMISOS = [
@@ -113,8 +145,12 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const Usuarios = () => {
   const { user } = useContext(AuthContext);
+  const userId = user?._id;
+  const userEmpresaId = user?.empresaId;
+  const userRol = user?.rol;
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
+  const hasLoadedUsuarios = useRef(false);
   const [openModal, setOpenModal] = useState(false);
   const [editingUsuario, setEditingUsuario] = useState(null);
   const [checkingNombreUsuario, setCheckingNombreUsuario] = useState(false);
@@ -139,26 +175,28 @@ const Usuarios = () => {
   });
 
   useEffect(() => {
-    if (!user || user.rol !== 'admin') {
+    if (!userRol || (userRol !== 'admin' && userRol !== 'superadmin')) {
       setLoading(false);
       return;
     }
 
     const fetchUsuarios = async () => {
+      const showLoading = !hasLoadedUsuarios.current;
       try {
-        setLoading(true);
+        if (showLoading) setLoading(true);
         const data = await getUsuarios();
         setUsuarios(data);
+        hasLoadedUsuarios.current = true;
       } catch (error) {
         toast.error(error.response?.data?.message || 'Error al cargar los usuarios');
         console.error('Error al cargar usuarios:', error);
       } finally {
-        setLoading(false);
+        if (showLoading) setLoading(false);
       }
     };
 
     fetchUsuarios();
-  }, [user]);
+  }, [userId, userEmpresaId, userRol]);
 
   const handleOpenModal = (usuario = null) => {
     setShowPassword(false);
@@ -229,6 +267,11 @@ const Usuarios = () => {
       }
       return next;
     });
+  };
+
+  const handleSelectIcon = (value) => {
+    setIconTouched(true);
+    setFormData((prev) => ({ ...prev, icono: value }));
   };
 
   const handleToggleEstado = (e) => {
@@ -412,7 +455,7 @@ const Usuarios = () => {
     }
   };
 
-  if (!user || user.rol !== 'admin') {
+  if (!user || (user.rol !== 'admin' && user.rol !== 'superadmin')) {
     return (
       <Container maxWidth="md">
         <Box sx={{ mt: 4 }}>
@@ -628,23 +671,40 @@ const Usuarios = () => {
             inputProps={{ maxLength: 15 }}
           />
 
-          <FormControl margin="normal" fullWidth>
-            <InputLabel id="icono-label">Ícono</InputLabel>
-            <Select
-              labelId="icono-label"
-              id="icono"
-              name="icono"
-              value={formData.icono}
-              label="Ícono"
-              onChange={handleChange}
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Ícono
+            </Typography>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(8, minmax(0, 1fr))',
+                gap: 1,
+                mt: 1,
+              }}
             >
-              {ICONOS_USUARIO.map((opt) => (
-                <MenuItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+              {ICONOS_USUARIO.map((opt) => {
+                const selected = formData.icono === opt.value;
+                const Icon = opt.Icon;
+                return (
+                  <Tooltip title={opt.label} key={opt.value}>
+                    <IconButton
+                      aria-label={opt.label}
+                      onClick={() => handleSelectIcon(opt.value)}
+                      sx={{
+                        borderRadius: 1,
+                        border: selected ? '2px solid' : '1px solid',
+                        borderColor: selected ? 'primary.main' : 'divider',
+                        backgroundColor: selected ? 'action.selected' : 'transparent',
+                      }}
+                    >
+                      <Icon size={20} />
+                    </IconButton>
+                  </Tooltip>
+                );
+              })}
+            </Box>
+          </Box>
 
           <TextField
             margin="normal"
@@ -764,6 +824,9 @@ const Usuarios = () => {
               label="Rol"
               onChange={handleChange}
             >
+              {user?.rol === 'superadmin' && (
+                <MenuItem value="superadmin">Superadmin</MenuItem>
+              )}
               <MenuItem value="admin">Admin</MenuItem>
               <MenuItem value="operador">Operador</MenuItem>
               <MenuItem value="usuario">Usuario</MenuItem>

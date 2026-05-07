@@ -25,6 +25,7 @@ import Eventos from './pages/Eventos';
 import ConsecutivoNavigation from './pages/consecutivo/ConsecutivoNavigation';
 import Usuarios from './pages/Usuarios';
 import Cotizaciones from './pages/Cotizaciones';
+import CotizacionDetalle from './pages/CotizacionDetalle';
 import DisponibilidadProducto from './pages/DisponibilidadProducto';
 import EmpresasAdmin from './pages/EmpresasAdmin';
 import EmpresaPendiente from './pages/EmpresaPendiente';
@@ -282,6 +283,11 @@ function App() {
                   <Route path="/cotizaciones" element={
                     <ProtectedRoute requiredPermission={{ modulo: 'cotizaciones', accion: 'ver' }}>
                       <Cotizaciones />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/cotizaciones/ver/:id" element={
+                    <ProtectedRoute requiredPermission={{ modulo: 'cotizaciones', accion: 'ver' }}>
+                      <CotizacionDetalle />
                     </ProtectedRoute>
                   } />
 

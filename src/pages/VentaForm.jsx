@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FaSave, FaArrowLeft, FaPlus, FaTrash } from 'react-icons/fa';
 import api from '../services/api';
 import { toast } from 'react-toastify';
@@ -34,7 +34,13 @@ import {
 const VentaForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const isEditMode = !!id;
+  const fromCotizacionId = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('fromCotizacion') || '';
+  }, [location.search]);
+  const loadedFromCotizacion = useRef(false);
 
   const [formData, setFormData] = useState({
     cliente: '',
@@ -140,6 +146,50 @@ const VentaForm = () => {
       fetchVenta();
     }
   }, [fetchData, fetchVenta, isEditMode]);
+
+  useEffect(() => {
+    const loadFromCotizacion = async () => {
+      if (isEditMode) return;
+      if (loadedFromCotizacion.current) return;
+      loadedFromCotizacion.current = true;
+
+      const stateCot = location.state?.fromCotizacion || null;
+      const idToFetch = fromCotizacionId || stateCot?._id || '';
+      if (!idToFetch && !stateCot) return;
+
+      try {
+        const cot = stateCot || (await api.get(`/cotizaciones/${idToFetch}`)).data;
+        const productosMapeados = Array.isArray(cot?.productos)
+          ? cot.productos.map((item) => ({
+              producto: item.producto,
+              cantidad: Number(item.cantidad) || 1,
+              precioUnitario: Number(item.precioUnitario) || 0,
+              subtotal: Number(item.subtotal) || 0,
+            }))
+          : [];
+
+        setProductoSeleccionado('');
+        setCantidadProducto(1);
+        setFormData((prev) => ({
+          ...prev,
+          cliente: cot?.cliente?._id || cot?.cliente || '',
+          tipoDeServicio: cot?.tipoDeServicio || '',
+          productos: productosMapeados,
+          clienteTelefono: cot?.cliente?.telefono || prev.clienteTelefono,
+          clienteDireccion: cot?.cliente?.direccion || prev.clienteDireccion,
+          descuento: 0,
+          abono: 0,
+        }));
+      } catch (error) {
+        toast.error(
+          error.response?.data?.message || 'No se pudo cargar la cotización para convertir'
+        );
+        console.error('Error cargar cotización para convertir:', error);
+      }
+    };
+
+    loadFromCotizacion();
+  }, [fromCotizacionId, isEditMode, location.state]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
