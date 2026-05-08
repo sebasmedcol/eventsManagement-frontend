@@ -160,6 +160,7 @@ const Productos = () => {
       setFormData({
         nombre: '',
         descripcion: '',
+        codigoSKU: '',
         tipoDeServicio: 'Venta',
         tipoDeCobro: 'unidad',
         precio: '',
@@ -170,6 +171,7 @@ const Productos = () => {
       setFormData({
         nombre: producto.nombre || '',
         descripcion: producto.descripcion || '',
+        codigoSKU: producto.codigoSKU || '',
         tipoDeServicio: producto.tipoDeServicio || 'Venta',
         tipoDeCobro: producto.tipoDeCobro || 'unidad',
         precio: producto.precio?.toString() || '',
@@ -189,6 +191,7 @@ const Productos = () => {
     setFormData({
       nombre: '',
       descripcion: '',
+      codigoSKU: '',
       tipoDeServicio: 'Venta',
       tipoDeCobro: 'unidad',
       precio: '',
@@ -204,10 +207,11 @@ const Productos = () => {
     });
   };
 
-  const filteredProductos = productos.filter(producto =>
-    producto.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    producto.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+const filteredProductos = productos.filter(producto =>
+  producto.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  producto.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  (producto.codigoSKU || '').toLowerCase().includes(searchTerm.toLowerCase())
+);
 
   const totalPages = Math.ceil(filteredProductos.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -326,6 +330,7 @@ const Productos = () => {
                     <TableCell>ID</TableCell>
                     <TableCell>Nombre</TableCell>
                     <TableCell>Descripción</TableCell>
+                    <TableCell>Código SKU</TableCell>
                     <TableCell>Tipo de servicio</TableCell>
                     <TableCell>Stock</TableCell>
                     <TableCell>Precio</TableCell>
@@ -345,6 +350,11 @@ const Productos = () => {
                       <TableCell>
                         <Typography variant="body2" color="text.secondary">
                           {producto.descripcion}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                          {producto.codigoSKU || '—'}
                         </Typography>
                       </TableCell>
                       <TableCell>
@@ -441,6 +451,12 @@ const Productos = () => {
                 <strong>Descripción:</strong> {selectedProducto.descripcion}
               </Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
+                <strong>Código SKU:</strong>{' '}
+                  <span style={{ fontFamily: 'monospace' }}>
+                {selectedProducto.codigoSKU || '—'}
+                </span>
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
                 <strong>Tipo de servicio:</strong> {selectedProducto.tipoDeServicio || '-'}
               </Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
@@ -485,6 +501,28 @@ const Productos = () => {
                 placeholder="Describa el producto..."
                 variant="outlined"
                 required
+              />
+              <TextField
+              fullWidth
+              label="Código SKU"
+              name="codigoSKU"
+              value={formData.codigoSKU}
+              onChange={handleInputChange}
+              margin="normal"
+              placeholder="Escanea o escribe el código manualmente"
+              variant="outlined"
+              autoComplete="off"
+              inputProps={{ style: { fontFamily: 'monospace', letterSpacing: 2 } }}
+              helperText="Puedes usar un lector láser: enfoca este campo y escanea el código de barras"
+              InputProps={{
+              endAdornment: (
+              <InputAdornment position="end">
+              <Typography variant="caption" color="text.secondary" title="Compatible con lector láser">
+              📷
+              </Typography>
+              </InputAdornment>
+              ),
+              }}
               />
               <FormControl fullWidth margin="normal" required>
                 <InputLabel>Tipo de servicio</InputLabel>
