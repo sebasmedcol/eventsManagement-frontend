@@ -62,7 +62,13 @@ const VentaForm = () => {
     totalPagar: 0,
     estado: true,
     clienteTelefono: '',
-    clienteDireccion: ''
+    clienteDireccion: '',
+    estadoPago: 'pendiente',
+    fechaLimitePago: (() => {
+  const d = new Date();
+  d.setDate(d.getDate() + 30);
+  return d.toISOString().split('T')[0];
+})(),
   });
 
   const [clientes, setClientes] = useState([]);
@@ -128,6 +134,9 @@ const VentaForm = () => {
       ventaData.loadOutFin = toDateTimeLocal(ventaData.loadOutFin);
       ventaData.soloCobrarTiempoEvento = !!ventaData.soloCobrarTiempoEvento;
       ventaData.estado = ventaData.estado === 'activa';
+      ventaData.fechaLimitePago = ventaData.fechaLimitePago
+  ? new Date(ventaData.fechaLimitePago).toISOString().split('T')[0]
+  : '';
       
       setFormData(ventaData);
     } catch (error) {
@@ -542,6 +551,17 @@ const VentaForm = () => {
   const fechaExpedicion = isEditMode
     ? formatDateTime(formData.fecha || formData.createdAt)
     : new Date().toLocaleString('es-CO');
+
+  const saldoPendienteActual = Math.max(0, formData.totalPagar - formData.abono);
+
+const estadoPagoEfectivo = useMemo(() => {
+  if (saldoPendienteActual <= 0) return 'pagada';
+  if (formData.abono > 0) return 'pago_parcial';
+  return formData.estadoPago;
+}, [saldoPendienteActual, formData.abono, formData.estadoPago]);
+
+const mostrarFechaLimite = estadoPagoEfectivo === 'pendiente' || estadoPagoEfectivo === 'pago_parcial';
+const estadoPagoEditable = formData.abono === 0 && saldoPendienteActual > 0;
 
   if (loading) {
     return (
@@ -964,7 +984,55 @@ const VentaForm = () => {
                     variant="outlined"
                   />
                 </Grid>
-                
+                {/* Estado de Pago */}
+<Grid item xs={12}>
+  <FormControl fullWidth variant="outlined">
+    <InputLabel>Estado de pago</InputLabel>
+    <Select
+      name="estadoPago"
+      value={estadoPagoEfectivo}
+      onChange={handleChange}
+      label="Estado de pago"
+      disabled={!estadoPagoEditable}
+    >
+      <MenuItem value="pendiente">
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'warning.main' }} />
+          Pendiente
+        </Box>
+      </MenuItem>
+      <MenuItem value="pago_parcial" disabled>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'info.main' }} />
+          Pago Parcial (automático)
+        </Box>
+      </MenuItem>
+      <MenuItem value="pagada" disabled>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'success.main' }} />
+          Pagada (automático)
+        </Box>
+      </MenuItem>
+    </Select>
+  </FormControl>
+</Grid>
+
+{/* Fecha límite de pago */}
+{mostrarFechaLimite && (
+  <Grid item xs={12}>
+    <TextField
+      fullWidth
+      label="Fecha límite de pago"
+      name="fechaLimitePago"
+      type="date"
+      value={formData.fechaLimitePago}
+      onChange={handleChange}
+      InputLabelProps={{ shrink: true }}
+      variant="outlined"
+      helperText="Máximo 30 días desde la emisión por defecto"
+    />
+  </Grid>
+)}
                 <Grid item xs={12}>
                   <FormControlLabel
                     control={

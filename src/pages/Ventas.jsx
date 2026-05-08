@@ -69,18 +69,23 @@ const handleAnular = async (id) => {
   }
 };
 
-  const fetchVentas = async () => {
+const fetchVentas = async () => {
+  try {
+    setLoading(true);
+    // Primero actualizar las vencidas por fecha
     try {
-      setLoading(true);
-      const response = await api.get('/ventas');
-      setVentas(response.data);
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Error al cargar las ventas');
-      console.error('Error al cargar ventas:', error);
-    } finally {
-      setLoading(false);
+      await api.put('/ventas/actualizar-vencidas');
+    } catch (e) {
+      console.warn('No se pudieron actualizar vencidas:', e);
     }
-  };
+    const response = await api.get('/ventas');
+    setVentas(response.data);
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Error al cargar las ventas');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleDelete = async (id) => {
     try {
@@ -139,6 +144,13 @@ const handleAnular = async (id) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('es-CO', options);
   };
+
+  const estadoPagoConfig = {
+  pendiente:    { label: 'Pendiente',    color: 'warning' },
+  pago_parcial: { label: 'Pago Parcial', color: 'info' },
+  pagada:       { label: 'Pagada',       color: 'success' },
+  vencida:      { label: 'Vencida',      color: 'error' },
+};
 
   if (loading) {
     return (
@@ -233,6 +245,7 @@ const handleAnular = async (id) => {
                     <TableCell>Tipo de Servicio</TableCell>
                     <TableCell>Total</TableCell>
                     <TableCell>Estado</TableCell>
+                    <TableCell>Estado de Pago</TableCell>
                     <TableCell align="right">Acciones</TableCell>
                   </TableRow>
                 </TableHead>
@@ -278,6 +291,12 @@ color={venta.estado === 'activa' ? 'success' : 'error'}
                           size="small"
                         />
                       </TableCell>
+                                              <TableCell>
+  {(() => {
+    const cfg = estadoPagoConfig[venta.estadoPago] || estadoPagoConfig.pendiente;
+    return <Chip label={cfg.label} color={cfg.color} size="small" />;
+  })()}
+</TableCell>
                       <TableCell align="right">
   <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
     <IconButton
