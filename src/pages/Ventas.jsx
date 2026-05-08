@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaPlus, FaEdit, FaTrash, FaSearch, FaEye } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaSearch, FaEye, FaBan } from 'react-icons/fa';
 import api from '../services/api';
 import { toast } from 'react-toastify';
 import {
@@ -41,10 +41,33 @@ const Ventas = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedVenta, setSelectedVenta] = useState(null);
+  const [modalAnularOpen, setModalAnularOpen] = useState(false);
+  const [selectedVentaAnular, setSelectedVentaAnular] = useState(null);
 
   useEffect(() => {
     fetchVentas();
   }, []);
+
+  const openModalAnular = (venta) => {
+  setSelectedVentaAnular(venta);
+  setModalAnularOpen(true);
+};
+
+const closeModalAnular = () => {
+  setModalAnularOpen(false);
+  setSelectedVentaAnular(null);
+};
+
+const handleAnular = async (id) => {
+  try {
+    await api.put(`/ventas/${id}/anular`);
+    toast.success('Venta anulada correctamente');
+    fetchVentas();
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Error al anular la venta');
+    console.error('Error al anular venta:', error);
+  }
+};
 
   const fetchVentas = async () => {
     try {
@@ -250,41 +273,57 @@ const Ventas = () => {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={venta.estado ? 'Activa' : 'Inactiva'}
-                          color={venta.estado ? 'success' : 'error'}
+label={venta.estado === 'activa' ? 'Activa' : 'Inactiva'}
+color={venta.estado === 'activa' ? 'success' : 'error'}
                           size="small"
                         />
                       </TableCell>
                       <TableCell align="right">
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                          <IconButton
-                            component={Link}
-                            to={`/ventas/ver/${venta._id}`}
-                            color="info"
-                            size="small"
-                            title="Ver detalles"
-                          >
-                            <FaEye />
-                          </IconButton>
-                          <IconButton
-                            component={Link}
-                            to={`/ventas/editar/${venta._id}`}
-                            color="primary"
-                            size="small"
-                            title="Editar"
-                          >
-                            <FaEdit />
-                          </IconButton>
-                          <IconButton
-                            onClick={() => openModal(venta)}
-                            color="error"
-                            size="small"
-                            title="Eliminar"
-                          >
-                            <FaTrash />
-                          </IconButton>
-                        </Box>
-                      </TableCell>
+  <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+    <IconButton
+      component={Link}
+      to={`/ventas/ver/${venta._id}`}
+      color="info"
+      size="small"
+      title="Ver detalles"
+    >
+      <FaEye />
+    </IconButton>
+
+    {venta.estado === 'activa' && (
+      <>
+        <IconButton
+          component={Link}
+          to={`/ventas/editar/${venta._id}`}
+          color="primary"
+          size="small"
+          title="Editar"
+        >
+          <FaEdit />
+        </IconButton>
+        <IconButton
+          onClick={() => openModalAnular(venta)}
+          color="warning"
+          size="small"
+          title="Anular venta"
+        >
+          <FaBan />
+        </IconButton>
+      </>
+    )}
+
+    {venta.estado === 'cancelada' && (
+      <IconButton
+        onClick={() => openModal(venta)}
+        color="error"
+        size="small"
+        title="Eliminar permanentemente"
+      >
+        <FaTrash />
+      </IconButton>
+    )}
+  </Box>
+</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -341,6 +380,35 @@ const Ventas = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      <Dialog open={modalAnularOpen} onClose={closeModalAnular} maxWidth="sm" fullWidth>
+  <DialogTitle>Confirmar Anulación</DialogTitle>
+  <DialogContent>
+    {selectedVentaAnular && (
+      <Box>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          ¿Estás seguro de que deseas anular la venta del cliente{' '}
+          <strong>"{selectedVentaAnular.cliente?.nombreCompleto}"</strong>?
+        </Typography>
+        <Typography variant="body2" color="warning.main" sx={{ fontSize: '14px' }}>
+          La venta pasará a estado cancelado y el stock de los productos será restaurado.
+        </Typography>
+      </Box>
+    )}
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={closeModalAnular}>Cancelar</Button>
+    <Button
+      onClick={() => {
+        handleAnular(selectedVentaAnular._id);
+        closeModalAnular();
+      }}
+      variant="contained"
+      color="warning"
+    >
+      Sí, Anular
+    </Button>
+  </DialogActions>
+</Dialog>
     </Container>
   );
 };
