@@ -345,79 +345,6 @@ const Dashboard = () => {
           </Grid>
         ))}
       </Grid>
-      {/* Alerta de productos sin stock */}
-<Grid container spacing={3} sx={{ mt: 4 }}>
-  <Grid item xs={12}>
-    <Paper sx={{ p: 3, border: '1px solid', borderColor: 'warning.light' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <FaBoxOpen color={theme.palette.warning.main} size={20} />
-        <Typography variant="h5" sx={{ fontWeight: 'medium', color: 'warning.dark' }}>
-          ⚠️ Productos sin stock ({productosSinStock.length})
-        </Typography>
-      </Box>
-
-      {productosSinStock.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          Todos los productos tienen stock disponible. ✅
-        </Typography>
-      ) : (
-        <Grid container spacing={1}>
-          {/* Encabezados */}
-          <Grid item xs={5}>
-            <Typography variant="subtitle2" color="text.secondary">Producto</Typography>
-          </Grid>
-          <Grid item xs={4}>
-            <Typography variant="subtitle2" color="text.secondary">Tipo de servicio</Typography>
-          </Grid>
-          <Grid item xs={3}>
-            <Typography variant="subtitle2" color="text.secondary" align="right">Stock</Typography>
-          </Grid>
-
-          {/* Filas */}
-          {productosSinStock.map((p) => (
-            <Grid item xs={12} key={p._id}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  p: 1,
-                  borderRadius: 1,
-                  bgcolor: alpha(theme.palette.warning.main, 0.08),
-                  border: '1px solid',
-                  borderColor: alpha(theme.palette.warning.main, 0.3),
-                }}
-              >
-                <Typography variant="body2" fontWeight="bold" sx={{ flex: 5 }}>
-                  {p.nombre}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ flex: 4 }}>
-                  {p.tipoDeServicio || '-'}
-                </Typography>
-                <Box sx={{ flex: 3, display: 'flex', justifyContent: 'flex-end' }}>
-                  <Typography
-                    variant="body2"
-                    fontWeight="bold"
-                    sx={{
-                      color: 'error.main',
-                      bgcolor: alpha(theme.palette.error.main, 0.1),
-                      px: 1.5,
-                      py: 0.3,
-                      borderRadius: 2,
-                      fontSize: '0.75rem',
-                    }}
-                  >
-                    Sin stock
-                  </Typography>
-                </Box>
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
-      )}
-    </Paper>
-  </Grid>
-</Grid>
       <Paper sx={{ p: 3 }}>
         <Typography variant="h5" component="h3" sx={{ mb: 3, fontWeight: 'medium' }}>
           Acciones Rápidas
@@ -541,7 +468,79 @@ const Dashboard = () => {
           </Paper>
         </Grid>
       </Grid>
+      {/* Alerta de productos sin stock */}
+<Grid container spacing={3} sx={{ mt: 4 }}>
+  <Grid item xs={12}>
+    <Paper sx={{ p: 3, border: '1px solid', borderColor: 'warning.light' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <FaBoxOpen color={theme.palette.warning.main} size={20} />
+        <Typography variant="h5" sx={{ fontWeight: 'medium', color: 'warning.dark' }}>
+          ⚠️ Productos sin stock ({productosSinStock.length})
+        </Typography>
+      </Box>
 
+      {productosSinStock.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          Todos los productos tienen stock disponible. ✅
+        </Typography>
+      ) : (
+        <Grid container spacing={1}>
+          {/* Encabezados */}
+          <Grid item xs={5}>
+            <Typography variant="subtitle2" color="text.secondary">Producto</Typography>
+          </Grid>
+          <Grid item xs={4}>
+            <Typography variant="subtitle2" color="text.secondary">Tipo de servicio</Typography>
+          </Grid>
+          <Grid item xs={3}>
+            <Typography variant="subtitle2" color="text.secondary" align="right">Stock</Typography>
+          </Grid>
+
+          {/* Filas */}
+          {productosSinStock.map((p) => (
+            <Grid item xs={12} key={p._id}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  p: 1,
+                  borderRadius: 1,
+                  bgcolor: alpha(theme.palette.warning.main, 0.08),
+                  border: '1px solid',
+                  borderColor: alpha(theme.palette.warning.main, 0.3),
+                }}
+              >
+                <Typography variant="body2" fontWeight="bold" sx={{ flex: 5 }}>
+                  {p.nombre}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ flex: 4 }}>
+                  {p.tipoDeServicio || '-'}
+                </Typography>
+                <Box sx={{ flex: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                  <Typography
+                    variant="body2"
+                    fontWeight="bold"
+                    sx={{
+                      color: 'error.main',
+                      bgcolor: alpha(theme.palette.error.main, 0.1),
+                      px: 1.5,
+                      py: 0.3,
+                      borderRadius: 2,
+                      fontSize: '0.75rem',
+                    }}
+                  >
+                    Sin stock
+                  </Typography>
+                </Box>
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      )}
+    </Paper>
+  </Grid>
+</Grid>
       {/* Top productos por ingresos en el año seleccionado */}
       <Grid container spacing={3} sx={{ mt: 4 }}>
         <Grid item xs={12} md={6}>

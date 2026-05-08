@@ -363,9 +363,13 @@ const filteredProductos = productos.filter(producto =>
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {producto.cantidadTotal != null ? producto.cantidadTotal : 0}
-                        </Typography>
+  {(producto.cantidadTotal === 0 || producto.cantidadTotal == null) ? (
+    <Chip label="Sin stock" color="warning" size="small" />
+  ) : (
+    <Typography variant="body2" color="text.secondary">
+      {producto.cantidadTotal}
+    </Typography>
+  )}
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium">
