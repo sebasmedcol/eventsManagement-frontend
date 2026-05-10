@@ -248,6 +248,22 @@ const VentaForm = () => {
       }));
       return;
     }
+    if (name === 'estadoPago') {
+  if (value === 'pago_completo') {
+    setFormData(prev => ({
+      ...prev,
+      estadoPago: 'pago_completo',
+      abono: prev.totalPagar, // auto-iguala abono al total
+    }));
+  } else {
+    setFormData(prev => ({
+      ...prev,
+      estadoPago: value,
+      abono: value === 'pendiente' ? 0 : prev.abono,
+    }));
+  }
+  return;
+}
     
     setFormData(prev => {
       const newData = { ...prev, [name]: newValue };
@@ -555,13 +571,16 @@ const VentaForm = () => {
   const saldoPendienteActual = Math.max(0, formData.totalPagar - formData.abono);
 
 const estadoPagoEfectivo = useMemo(() => {
+  if (formData.estadoPago === 'pago_completo') return 'pago_completo';
   if (saldoPendienteActual <= 0) return 'pagada';
   if (formData.abono > 0) return 'pago_parcial';
   return formData.estadoPago;
 }, [saldoPendienteActual, formData.abono, formData.estadoPago]);
 
 const mostrarFechaLimite = estadoPagoEfectivo === 'pendiente' || estadoPagoEfectivo === 'pago_parcial';
-const estadoPagoEditable = formData.abono === 0 && saldoPendienteActual > 0;
+const estadoPagoEditable =
+  formData.estadoPago === 'pago_completo' ||
+  (formData.abono === 0 && saldoPendienteActual > 0);
 
   if (loading) {
     return (
@@ -973,16 +992,22 @@ const estadoPagoEditable = formData.abono === 0 && saldoPendienteActual > 0;
                 </Grid>
                 
                 <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Abono"
-                    name="abono"
-                    type="number"
-                    value={formData.abono}
-                    onChange={handleChange}
-                    inputProps={{ min: 0 }}
-                    variant="outlined"
-                  />
+<TextField
+  fullWidth
+  label="Abono"
+  name="abono"
+  type="number"
+  value={formData.abono}
+  onChange={handleChange}
+  inputProps={{ min: 0 }}
+  variant="outlined"
+  disabled={formData.estadoPago === 'pago_completo'}
+  helperText={
+    formData.estadoPago === 'pago_completo'
+      ? 'Deshabilitado: el cliente pagó el total completo'
+      : 'El estado de pago se actualiza automáticamente según el abono'
+  }
+/>
                 </Grid>
                 {/* Estado de Pago */}
 <Grid item xs={12}>
@@ -1013,6 +1038,12 @@ const estadoPagoEditable = formData.abono === 0 && saldoPendienteActual > 0;
           Pagada (automático)
         </Box>
       </MenuItem>
+      <MenuItem value="pago_completo">
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'success.main' }} />
+    Pago completo
+  </Box>
+</MenuItem>
     </Select>
   </FormControl>
 </Grid>

@@ -200,12 +200,20 @@ const Productos = () => {
     });
   };
 
-  const handleInputChange = (e) => {
+const handleInputChange = (e) => {
+  const { name, value } = e.target;
+
+  if (name === 'tipoDeServicio') {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      tipoDeServicio: value,
+      tipoDeCobro: value === 'Venta' ? 'unidad' : 'hora',
     });
-  };
+    return;
+  }
+
+  setFormData({ ...formData, [name]: value });
+};
 
 const filteredProductos = productos.filter(producto =>
   producto.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -329,7 +337,6 @@ const filteredProductos = productos.filter(producto =>
                   <TableRow>
                     <TableCell>ID</TableCell>
                     <TableCell>Nombre</TableCell>
-                    <TableCell>Descripción</TableCell>
                     <TableCell>Código SKU</TableCell>
                     <TableCell>Tipo de servicio</TableCell>
                     <TableCell>Stock</TableCell>
@@ -345,11 +352,6 @@ const filteredProductos = productos.filter(producto =>
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium">
                           {producto.nombre}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {producto.descripcion}
                         </Typography>
                       </TableCell>
                       <TableCell>
@@ -540,18 +542,16 @@ const filteredProductos = productos.filter(producto =>
                   <MenuItem value="Venta">Venta</MenuItem>
                 </Select>
               </FormControl>
-              <FormControl fullWidth margin="normal" required>
-                <InputLabel>Tipo de cobro</InputLabel>
-                <Select
-                  name="tipoDeCobro"
-                  value={formData.tipoDeCobro}
-                  onChange={handleInputChange}
-                  label="Tipo de cobro"
-                >
-                  <MenuItem value="unidad">Por unidad</MenuItem>
-                  <MenuItem value="hora">Por hora</MenuItem>
-                </Select>
-              </FormControl>
+              <TextField
+  fullWidth
+  label="Tipo de cobro"
+  value={formData.tipoDeServicio === 'Venta' ? 'Por unidad' : 'Por hora'}
+  margin="normal"
+  variant="outlined"
+  InputProps={{ readOnly: true }}
+  helperText="Se asigna automáticamente según el tipo de servicio"
+  sx={{ '& .MuiInputBase-input': { color: 'text.secondary' } }}
+/>
               <TextField
                 fullWidth
                 label={

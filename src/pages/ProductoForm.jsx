@@ -69,13 +69,22 @@ const ProductoForm = () => {
     }
   }, [isEditMode, fetchProducto]);
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+const handleChange = (e) => {
+  const { name, value, type, checked } = e.target;
+  let newValue = type === 'checkbox' ? checked : value;
+
+  // Auto-asignar tipoDeCobro según tipoDeServicio
+  if (name === 'tipoDeServicio') {
     setFormData({
       ...formData,
-      [name]: type === 'checkbox' ? checked : value
+      tipoDeServicio: newValue,
+      tipoDeCobro: newValue === 'Venta' ? 'unidad' : 'hora',
     });
-  };
+    return;
+  }
+
+  setFormData({ ...formData, [name]: newValue });
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -201,19 +210,16 @@ const ProductoForm = () => {
               <MenuItem value="Venta">Venta</MenuItem>
             </Select>
           </FormControl>
-
-          <FormControl fullWidth margin="normal" required>
-            <InputLabel>Tipo de cobro</InputLabel>
-            <Select
-              name="tipoDeCobro"
-              value={formData.tipoDeCobro}
-              onChange={handleChange}
-              label="Tipo de cobro"
-            >
-              <MenuItem value="unidad">Por unidad</MenuItem>
-              <MenuItem value="hora">Por hora</MenuItem>
-            </Select>
-          </FormControl>
+<TextField
+  fullWidth
+  label="Tipo de cobro"
+  value={formData.tipoDeServicio === 'Venta' ? 'Por unidad' : 'Por hora'}
+  margin="normal"
+  variant="outlined"
+  InputProps={{ readOnly: true }}
+  helperText="Se asigna automáticamente según el tipo de servicio"
+  sx={{ '& .MuiInputBase-input': { color: 'text.secondary' } }}
+/>
 
           <TextField
             fullWidth
