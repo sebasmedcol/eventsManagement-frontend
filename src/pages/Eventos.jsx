@@ -74,18 +74,31 @@ const Eventos = () => {
       };
 
       // Mapear a formato de react-big-calendar
-      const mapped = data.map((e) => {
-        const eventDate = e.start || e.venta?.fechaDelEvento;
-        const normalized = normalizeDate(eventDate);
-        return {
-          id: e._id,
-          title: `${e.venta?.cliente?.nombreCompleto || 'Sin cliente'} - ${e.tipoDeServicio}`,
-          start: normalized,
-          end: normalized,
-          resource: e,
-          allDay: true,
-        };
-      });
+      // Reemplaza el bloque mapped completo
+const mapped = data
+  .filter((e) => e.venta?.tipoDeServicio === 'Alquiler') // solo alquileres
+  .map((e) => {
+    // Inicio: loadInInicio, fallback a fechaDelEvento
+    const startRaw = e.venta?.loadInInicio || e.start || e.venta?.fechaDelEvento;
+    // Fin: loadOutFin, fallback al mismo día de inicio
+    const endRaw = e.venta?.loadOutFin || startRaw;
+
+    const startDate = normalizeDate(startRaw);
+
+    // react-big-calendar maneja end como exclusivo en eventos allDay,
+    // por eso se suma 1 día para que el último día aparezca en el calendario
+    const endDate = normalizeDate(endRaw);
+    endDate.setDate(endDate.getDate() + 1);
+
+    return {
+      id: e._id,
+      title: `${e.venta?.cliente?.nombreCompleto || 'Sin cliente'}`,
+      start: startDate,
+      end: endDate,
+      resource: e,
+      allDay: true,
+    };
+  });
 
       setEventos(mapped);
     } catch (err) {
