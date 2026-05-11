@@ -22,6 +22,8 @@ import Ventas from './pages/Ventas';
 import VentaForm from './pages/VentaForm';
 import VentaDetalle from './pages/VentaDetalle';
 import Eventos from './pages/Eventos';
+import EventosPremium from './pages/EventosPremium';
+import GestionEventoPremium from './pages/GestionEventoPremium';
 import ConsecutivoNavigation from './pages/consecutivo/ConsecutivoNavigation';
 import Usuarios from './pages/Usuarios';
 import Cotizaciones from './pages/Cotizaciones';
@@ -269,6 +271,16 @@ function App() {
                   <Route path="/eventos" element={
                     <ProtectedRoute requiredPermission={{ modulo: 'eventos', accion: 'ver' }}>
                       <Eventos />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/eventos-premium" element={
+                    <ProtectedRoute requiredPermission={{ modulo: 'eventos', accion: 'ver' }}>
+                      <EventosPremium />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/eventos-premium/:id/gestion" element={
+                    <ProtectedRoute requiredPermission={{ modulo: 'eventos', accion: 'editar' }}>
+                      <GestionEventoPremium />
                     </ProtectedRoute>
                   } />
 

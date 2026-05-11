@@ -40,7 +40,12 @@ const VentaForm = () => {
     const params = new URLSearchParams(location.search);
     return params.get('fromCotizacion') || '';
   }, [location.search]);
+  const fromEventoFichaId = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('fromEventoFicha') || '';
+  }, [location.search]);
   const loadedFromCotizacion = useRef(false);
+  const loadedFromEventoFicha = useRef(false);
 
   const [formData, setFormData] = useState({
     cliente: '',
@@ -199,6 +204,56 @@ const VentaForm = () => {
 
     loadFromCotizacion();
   }, [fromCotizacionId, isEditMode, location.state]);
+
+  useEffect(() => {
+    const loadFromEventoFicha = async () => {
+      if (isEditMode) return;
+      if (loadedFromEventoFicha.current) return;
+      loadedFromEventoFicha.current = true;
+
+      const stateFicha = location.state?.fromEventoFicha || null;
+      const idToFetch = fromEventoFichaId || stateFicha?._id || '';
+      if (!idToFetch && !stateFicha) return;
+
+      try {
+        const ficha =
+          stateFicha || (await api.get(`/eventos-premium/fichas/${idToFetch}`)).data;
+
+        const eventoClienteId =
+          ficha?.evento?.cliente?._id || ficha?.evento?.cliente || '';
+        const tipoServicio = ficha?.tipoDeServicio || '';
+
+        const productosMapeados = Array.isArray(ficha?.productos)
+          ? ficha.productos.map((item) => ({
+              producto: item.producto,
+              cantidad: Number(item.cantidad) || 1,
+              precioUnitario: Number(item.precioUnitario) || 0,
+              subtotal: Number(item.subtotal) || 0,
+            }))
+          : [];
+
+        setProductoSeleccionado('');
+        setCantidadProducto(1);
+        setFormData((prev) => ({
+          ...prev,
+          cliente: eventoClienteId,
+          tipoDeServicio: tipoServicio,
+          productos: productosMapeados,
+          clienteTelefono: ficha?.evento?.cliente?.telefono || prev.clienteTelefono,
+          clienteDireccion: ficha?.evento?.cliente?.direccion || prev.clienteDireccion,
+          descuento: 0,
+          abono: 0,
+        }));
+      } catch (error) {
+        toast.error(
+          error.response?.data?.message || 'No se pudo cargar la ficha para convertir'
+        );
+        console.error('Error cargar ficha para convertir:', error);
+      }
+    };
+
+    loadFromEventoFicha();
+  }, [fromEventoFichaId, isEditMode, location.state]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -506,8 +561,24 @@ const VentaForm = () => {
         await api.put(`/ventas/${id}`, ventaData);
         toast.success('Venta actualizada correctamente');
       } else {
-        await api.post('/ventas', ventaData);
+        const res = await api.post('/ventas', ventaData);
+        const ventaId = res?.data?._id || '';
         toast.success('Venta creada correctamente');
+
+        const fichaId =
+          fromEventoFichaId || location.state?.fromEventoFicha?._id || '';
+        if (ventaId && fichaId) {
+          try {
+            await api.put(`/eventos-premium/fichas/${fichaId}/link-venta`, { ventaId });
+          } catch (linkErr) {
+            toast.warning(
+              linkErr.response?.data?.message ||
+                'La venta se creó, pero no se pudo asociar a la ficha'
+            );
+          }
+          navigate(`/ventas/ver/${ventaId}`);
+          return;
+        }
       }
       
       navigate('/ventas');

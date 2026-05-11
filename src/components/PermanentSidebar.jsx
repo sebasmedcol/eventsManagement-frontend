@@ -38,6 +38,9 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
   if (!user || location.pathname === '/login') return null;
 
   const currentWidth = collapsed ? 72 : width;
+  const planEmpresa =
+    user?.empresa && typeof user.empresa === 'object' ? user.empresa.plan : '';
+  const hasPremium = user?.rol === 'superadmin' || ['premium', 'super'].includes(planEmpresa);
 
   const canSee = (perm) => {
     if (!perm) return true;
@@ -53,6 +56,9 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
     ...(canSee('productos') ? [{ text: 'Productos', icon: <FaBoxOpen />, path: '/productos' }] : []),
     ...(canSee('ventas') ? [{ text: 'Ventas', icon: <FaShoppingCart />, path: '/ventas' }] : []),
     ...(canSee('eventos') ? [{ text: 'Cronograma de eventos', icon: <FaCalendarAlt />, path: '/eventos' }] : []),
+    ...(canSee('eventos') && hasPremium
+      ? [{ text: 'Eventos', icon: <FaCalendarAlt />, path: '/eventos-premium' }]
+      : []),
     ...(canSee('consecutivos') ? [{ text: 'Consecutivos', icon: <FaListOl />, path: '/consecutivos' }] : []),
     ...(canSee('cotizaciones') ? [{ text: 'Cotizaciones', icon: <FaListOl />, path: '/cotizaciones' }] : []),
     ...(canSee('disponibilidad') ? [{ text: 'Disponibilidad', icon: <FaCalendarAlt />, path: '/disponibilidad' }] : []),

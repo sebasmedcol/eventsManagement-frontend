@@ -1,5 +1,6 @@
-import { useContext, useState, useEffect } from 'react';
+import { useContext, useMemo, useRef, useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import {
   FaSignOutAlt,
   FaUser,
@@ -37,6 +38,7 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import CircularProgress from '@mui/material/CircularProgress';
 import { getEmpresasAdmin } from '../services/empresaAdminService';
+import { fetchNotificacionesEventosPremium } from '../services/eventoService';
 
 const getIconoPorRol = (rol) => {
   if (rol === 'superadmin') return 'userShield';
@@ -74,10 +76,25 @@ const Navbar = ({ onToggleColorMode, mode, sidebarCollapsed, onToggleSidebarColl
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingEmpresas, setPendingEmpresas] = useState([]);
+  const [eventosNotif, setEventosNotif] = useState([]);
   const [anchorNotif, setAnchorNotif] = useState(null);
   const [loggingOut, setLoggingOut] = useState(false);
+  const lastNotifCount = useRef(0);
 
   const isLoginPage = location.pathname === '/login';
+
+  const hasEventosVer = useMemo(() => {
+    if (!user) return false;
+    if (user.rol === 'admin' || user.rol === 'superadmin' || user.esAdminPrincipal) return true;
+    return user?.permisos?.eventos?.ver === true;
+  }, [user]);
+
+  const hasPremiumPlan = useMemo(() => {
+    if (!user) return false;
+    if (user.rol === 'superadmin') return true;
+    const plan = user?.empresa && typeof user.empresa === 'object' ? user.empresa.plan : '';
+    return ['premium', 'super'].includes(plan);
+  }, [user]);
 
   // Un solo handler: en mobile abre el drawer temporal; en desktop colapsa/expande el permanent
   const handleMenuToggle = () => {
@@ -125,6 +142,47 @@ const Navbar = ({ onToggleColorMode, mode, sidebarCollapsed, onToggleSidebarColl
     };
   }, [user]);
 
+  useEffect(() => {
+    if (!user) {
+      setEventosNotif([]);
+      lastNotifCount.current = 0;
+      return;
+    }
+    if (!hasPremiumPlan || !hasEventosVer) {
+      setEventosNotif([]);
+      lastNotifCount.current = 0;
+      return;
+    }
+
+    let isMounted = true;
+
+    const cargar = async () => {
+      try {
+        const res = await fetchNotificacionesEventosPremium();
+        if (!isMounted) return;
+        const data = Array.isArray(res.data) ? res.data : [];
+        setEventosNotif(data);
+      } catch {
+        if (isMounted) setEventosNotif([]);
+      }
+    };
+
+    cargar();
+    const id = setInterval(cargar, 30000);
+    return () => {
+      isMounted = false;
+      clearInterval(id);
+    };
+  }, [user, hasPremiumPlan, hasEventosVer]);
+
+  useEffect(() => {
+    const count = (pendingEmpresas?.length || 0) + (eventosNotif?.length || 0);
+    if (count > lastNotifCount.current && lastNotifCount.current > 0 && eventosNotif.length > 0) {
+      toast.info('Tienes fichas asignadas en Eventos');
+    }
+    lastNotifCount.current = count;
+  }, [pendingEmpresas, eventosNotif]);
+
   const handleOpenNotif = (event) => {
     setAnchorNotif(event.currentTarget);
   };
@@ -136,6 +194,15 @@ const Navbar = ({ onToggleColorMode, mode, sidebarCollapsed, onToggleSidebarColl
   const handleGoToEmpresas = (empresaId) => {
     handleCloseNotif();
     navigate(`/superadmin/empresas?focus=${empresaId}`);
+  };
+
+  const handleGoToFichaAsignada = (n) => {
+    handleCloseNotif();
+    if (!n?.eventoId || !n?.fichaId) {
+      navigate('/eventos-premium');
+      return;
+    }
+    navigate(`/eventos-premium/${n.eventoId}/gestion?focusFicha=${n.fichaId}`);
   };
 
   const handleLogout = () => {
@@ -198,13 +265,13 @@ const Navbar = ({ onToggleColorMode, mode, sidebarCollapsed, onToggleSidebarColl
 
           {user && (
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              {user.rol === 'superadmin' && (
+              {(user.rol === 'superadmin' || (hasPremiumPlan && hasEventosVer)) && (
                 <>
-                  <Tooltip title="Solicitudes de empresas">
+                  <Tooltip title="Notificaciones">
                     <IconButton color="inherit" onClick={handleOpenNotif} sx={{ mr: 1 }}>
                       <Badge
                         color="error"
-                        badgeContent={pendingEmpresas.length}
+                        badgeContent={(pendingEmpresas?.length || 0) + (eventosNotif?.length || 0)}
                         overlap="circular"
                       >
                         <NotificationsNoneIcon />
@@ -218,17 +285,39 @@ const Navbar = ({ onToggleColorMode, mode, sidebarCollapsed, onToggleSidebarColl
                     anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                     transformOrigin={{ vertical: 'top', horizontal: 'right' }}
                   >
-                    {pendingEmpresas.length === 0 && (
-                      <MenuItem disabled>No hay solicitudes pendientes</MenuItem>
+                    {user.rol === 'superadmin' && (
+                      <>
+                        <MenuItem disabled sx={{ opacity: 0.8 }}>
+                          Empresas pendientes
+                        </MenuItem>
+                        {pendingEmpresas.length === 0 && (
+                          <MenuItem disabled>No hay solicitudes pendientes</MenuItem>
+                        )}
+                        {pendingEmpresas.map((e) => (
+                          <MenuItem key={e._id} onClick={() => handleGoToEmpresas(e._id)}>
+                            {e.nombre} · {e.email}
+                          </MenuItem>
+                        ))}
+                      </>
                     )}
-                    {pendingEmpresas.map((e) => (
-                      <MenuItem
-                        key={e._id}
-                        onClick={() => handleGoToEmpresas(e._id)}
-                      >
-                        {e.nombre} · {e.email}
-                      </MenuItem>
-                    ))}
+
+                    {hasPremiumPlan && hasEventosVer && (
+                      <>
+                        {user.rol === 'superadmin' && <MenuItem disabled sx={{ opacity: 0.5 }}>—</MenuItem>}
+                        <MenuItem disabled sx={{ opacity: 0.8 }}>
+                          Eventos · Fichas asignadas
+                        </MenuItem>
+                        {eventosNotif.length === 0 && (
+                          <MenuItem disabled>No tienes fichas asignadas</MenuItem>
+                        )}
+                        {eventosNotif.map((n) => (
+                          <MenuItem key={n._id} onClick={() => handleGoToFichaAsignada(n)}>
+                            {n.clienteNombre ? `${n.clienteNombre} · ` : ''}
+                            {n.eventoNombre} · {n.fichaNombre}
+                          </MenuItem>
+                        ))}
+                      </>
+                    )}
                   </Menu>
                 </>
               )}
