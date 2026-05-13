@@ -9,6 +9,16 @@ const hasPerm = (user, requiredPermission) => {
     return true;
   }
   const { modulo, accion } = requiredPermission;
+  
+  // Primero verificar permisos desde rol_id (nuevo sistema de roles)
+  if (user.rol_id && user.rol_id.activo && user.rol_id.permisos) {
+    const permisosRol = user.rol_id.permisos;
+    if (permisosRol?.[modulo]?.[accion] === true) {
+      return true;
+    }
+  }
+  
+  // Fallback a permisos embebidos del usuario (legacy)
   return user?.permisos?.[modulo]?.[accion] === true;
 };
 

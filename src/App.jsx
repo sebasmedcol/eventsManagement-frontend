@@ -26,6 +26,7 @@ import EventosPremium from './pages/EventosPremium';
 import GestionEventoPremium from './pages/GestionEventoPremium';
 import ConsecutivoNavigation from './pages/consecutivo/ConsecutivoNavigation';
 import Usuarios from './pages/Usuarios';
+import Roles from './pages/Roles';
 import Cotizaciones from './pages/Cotizaciones';
 import CotizacionDetalle from './pages/CotizacionDetalle';
 import DisponibilidadProducto from './pages/DisponibilidadProducto';
@@ -288,6 +289,13 @@ function App() {
                   <Route path="/usuarios" element={
                     <ProtectedRoute requiredPermission={{ modulo: 'usuarios', accion: 'ver' }}>
                       <Usuarios />
+                    </ProtectedRoute>
+                  } />
+
+                  {/* Rutas de Roles (solo admin, backend valida) */}
+                  <Route path="/roles" element={
+                    <ProtectedRoute requiredPermission={{ modulo: 'roles', accion: 'ver' }}>
+                      <Roles />
                     </ProtectedRoute>
                   } />
 

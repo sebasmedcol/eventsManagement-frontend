@@ -1,6 +1,6 @@
 import { cloneElement, isValidElement, useContext } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
-import { FaUser, FaUsers, FaBoxOpen, FaShoppingCart, FaListOl, FaTachometerAlt, FaCalendarAlt } from 'react-icons/fa';
+import { FaUser, FaUsers, FaBoxOpen, FaShoppingCart, FaListOl, FaTachometerAlt, FaCalendarAlt, FaUserTag } from 'react-icons/fa';
 import AuthContext from '../context/AuthContext';
 import {
   Box,
@@ -47,6 +47,16 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
     if (user.rol === 'admin' || user.rol === 'superadmin' || user.esAdminPrincipal) {
       return true;
     }
+    
+    // Primero verificar permisos desde rol_id (nuevo sistema de roles)
+    if (user.rol_id && user.rol_id.activo && user.rol_id.permisos) {
+      const permisosRol = user.rol_id.permisos;
+      if (permisosRol?.[perm]?.ver === true) {
+        return true;
+      }
+    }
+    
+    // Fallback a permisos embebidos del usuario (legacy)
     return user?.permisos?.[perm]?.ver === true;
   };
 
@@ -63,7 +73,10 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
     ...(canSee('cotizaciones') ? [{ text: 'Cotizaciones', icon: <FaListOl />, path: '/cotizaciones' }] : []),
     ...(canSee('disponibilidad') ? [{ text: 'Disponibilidad', icon: <FaCalendarAlt />, path: '/disponibilidad' }] : []),
     ...(user.rol === 'admin' || user.rol === 'superadmin'
-      ? [{ text: 'Usuarios', icon: <FaUser />, path: '/usuarios' }]
+      ? [
+          { text: 'Usuarios', icon: <FaUser />, path: '/usuarios' },
+          { text: 'Roles', icon: <FaUserTag />, path: '/roles' },
+        ]
       : []),
     ...(user.rol === 'superadmin'
       ? [

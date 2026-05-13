@@ -49,12 +49,12 @@ import {
   Tooltip,
   Chip,
 } from '@mui/material';
-import Checkbox from '@mui/material/Checkbox';
 import InputAdornment from '@mui/material/InputAdornment';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import AuthContext from '../context/AuthContext';
 import { getUsuarios, createUsuario, updateUsuario, deleteUsuario } from '../services/usuarioService';
+import { getRoles } from '../services/rolService';
 import api from '../services/api';
 
 const INDICATIVOS_COMUNES = ['+57', '+1', '+52', '+34', '+51', '+54', '+56', '+58'];
@@ -67,7 +67,7 @@ const ICONOS_USUARIO = [
   { value: 'userNinja', label: 'Ninja', Icon: FaUserNinja },
   { value: 'userAstronaut', label: 'Astronauta', Icon: FaUserAstronaut },
   { value: 'userGraduate', label: 'Graduado', Icon: FaUserGraduate },
-  { value: 'userMd', label: 'Médico', Icon: FaUserMd },
+  { value: 'userMd', label: 'Medico', Icon: FaUserMd },
   { value: 'userTag', label: 'Etiqueta', Icon: FaUserTag },
   { value: 'userFriends', label: 'Equipo', Icon: FaUserFriends },
   { value: 'userClock', label: 'Tiempo', Icon: FaUserClock },
@@ -76,40 +76,6 @@ const ICONOS_USUARIO = [
   { value: 'userPlus', label: 'Nuevo', Icon: FaUserPlus },
   { value: 'userMinus', label: 'Baja', Icon: FaUserMinus },
 ];
-
-const MODULOS_PERMISOS = [
-  { key: 'clientes', label: 'Clientes' },
-  { key: 'productos', label: 'Productos' },
-  { key: 'ventas', label: 'Ventas' },
-  { key: 'eventos', label: 'Cronograma de eventos' },
-  { key: 'consecutivos', label: 'Consecutivos' },
-  { key: 'cotizaciones', label: 'Cotizaciones' },
-  { key: 'disponibilidad', label: 'Disponibilidad' },
-];
-
-const buildPermisosDefault = () => {
-  const base = {};
-  MODULOS_PERMISOS.forEach((m) => {
-    base[m.key] = { crear: false, ver: false, editar: false, eliminar: false };
-  });
-  return base;
-};
-
-const normalizarPermisosUI = (input) => {
-  const base = buildPermisosDefault();
-  if (!input || typeof input !== 'object') return base;
-  MODULOS_PERMISOS.forEach((m) => {
-    const v = input[m.key];
-    if (!v || typeof v !== 'object') return;
-    base[m.key] = {
-      crear: v.crear === true,
-      ver: v.ver === true,
-      editar: v.editar === true,
-      eliminar: v.eliminar === true,
-    };
-  });
-  return base;
-};
 
 const getIconoPorRol = (rol) => {
   if (rol === 'superadmin') return 'userShield';
@@ -121,22 +87,22 @@ const getIconoPorRol = (rol) => {
 const validarPassword = (password) => {
   const raw = String(password ?? '');
   if (raw !== raw.trim()) {
-    return 'La contraseña no puede contener espacios';
+    return 'La contrasena no puede contener espacios';
   }
   if (/\s/.test(raw)) {
-    return 'La contraseña no puede contener espacios';
+    return 'La contrasena no puede contener espacios';
   }
   if (raw.length < 8 || raw.length > 20) {
-    return 'La contraseña debe tener entre 8 y 20 caracteres';
+    return 'La contrasena debe tener entre 8 y 20 caracteres';
   }
   if (!/[A-Z]/.test(raw)) {
-    return 'La contraseña debe incluir al menos 1 mayúscula';
+    return 'La contrasena debe incluir al menos 1 mayuscula';
   }
   if (!/[0-9]/.test(raw)) {
-    return 'La contraseña debe incluir al menos 1 número';
+    return 'La contrasena debe incluir al menos 1 numero';
   }
   if (!/[^A-Za-z0-9]/.test(raw)) {
-    return 'La contraseña debe incluir al menos 1 carácter especial';
+    return 'La contrasena debe incluir al menos 1 caracter especial';
   }
   return null;
 };
@@ -149,6 +115,7 @@ const Usuarios = () => {
   const userEmpresaId = user?.empresaId;
   const userRol = user?.rol;
   const [usuarios, setUsuarios] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const hasLoadedUsuarios = useRef(false);
   const [openModal, setOpenModal] = useState(false);
@@ -163,6 +130,7 @@ const Usuarios = () => {
     password: '',
     confirmPassword: '',
     rol: 'operador',
+    rol_id: '',
     estado: true,
     esAdminPrincipal: false,
     email: '',
@@ -171,7 +139,6 @@ const Usuarios = () => {
     indicativoCustom: '',
     telefono: '',
     icono: 'userCog',
-    permisos: buildPermisosDefault(),
   });
 
   useEffect(() => {
@@ -180,22 +147,26 @@ const Usuarios = () => {
       return;
     }
 
-    const fetchUsuarios = async () => {
+    const fetchData = async () => {
       const showLoading = !hasLoadedUsuarios.current;
       try {
         if (showLoading) setLoading(true);
-        const data = await getUsuarios();
-        setUsuarios(data);
+        const [usuariosData, rolesData] = await Promise.all([
+          getUsuarios(),
+          getRoles(),
+        ]);
+        setUsuarios(usuariosData);
+        setRoles(rolesData.filter((r) => r.activo)); // Solo mostrar roles activos
         hasLoadedUsuarios.current = true;
       } catch (error) {
-        toast.error(error.response?.data?.message || 'Error al cargar los usuarios');
-        console.error('Error al cargar usuarios:', error);
+        toast.error(error.response?.data?.message || 'Error al cargar los datos');
+        console.error('Error al cargar datos:', error);
       } finally {
         if (showLoading) setLoading(false);
       }
     };
 
-    fetchUsuarios();
+    fetchData();
   }, [userId, userEmpresaId, userRol]);
 
   const handleOpenModal = (usuario = null) => {
@@ -210,6 +181,7 @@ const Usuarios = () => {
         password: '',
         confirmPassword: '',
         rol: usuario.rol,
+        rol_id: usuario.rol_id?._id || usuario.rol_id || '',
         estado: usuario.estado,
         esAdminPrincipal: !!usuario.esAdminPrincipal,
         email: usuario.email || '',
@@ -218,15 +190,17 @@ const Usuarios = () => {
         indicativoCustom: indicativoEsComun ? '' : indicativoUsuario,
         telefono: usuario.telefono || '',
         icono: usuario.icono || getIconoPorRol(usuario.rol),
-        permisos: normalizarPermisosUI(usuario.permisos),
       });
     } else {
       setEditingUsuario(null);
+      // Buscar el rol de Operador por defecto
+      const rolOperador = roles.find((r) => r.nombre.toLowerCase() === 'operador');
       setFormData({
         nombreUsuario: '',
         password: '',
         confirmPassword: '',
         rol: 'operador',
+        rol_id: rolOperador?._id || '',
         estado: true,
         esAdminPrincipal: false,
         email: '',
@@ -235,7 +209,6 @@ const Usuarios = () => {
         indicativoCustom: '',
         telefono: '',
         icono: 'userCog',
-        permisos: buildPermisosDefault(),
       });
     }
     setCheckingNombreUsuario(false);
@@ -278,29 +251,11 @@ const Usuarios = () => {
     setFormData((prev) => ({ ...prev, estado: e.target.checked }));
   };
 
-  const handlePermisoToggle = (modulo, accion) => {
-    setFormData((prev) => ({
-      ...prev,
-      permisos: {
-        ...prev.permisos,
-        [modulo]: {
-          ...(prev.permisos?.[modulo] || {
-            crear: false,
-            ver: false,
-            editar: false,
-            eliminar: false,
-          }),
-          [accion]: !(prev.permisos?.[modulo]?.[accion] === true),
-        },
-      },
-    }));
-  };
-
   const handleSubmit = async () => {
     try {
       const nombreUsuarioTrim = formData.nombreUsuario.trim();
       if (!nombreUsuarioTrim || (!editingUsuario && !formData.password)) {
-        toast.error('Usuario y contraseña son obligatorios para nuevos usuarios');
+        toast.error('Usuario y contrasena son obligatorios para nuevos usuarios');
         return;
       }
 
@@ -310,7 +265,7 @@ const Usuarios = () => {
       }
 
       if (nombreUsuarioDisponible === false) {
-        toast.error('El nombre de usuario no está disponible');
+        toast.error('El nombre de usuario no esta disponible');
         return;
       }
 
@@ -318,7 +273,7 @@ const Usuarios = () => {
       const emailConfirmTrim = formData.emailConfirm.trim().toLowerCase();
 
       if ((emailTrim || emailConfirmTrim) && emailTrim !== emailConfirmTrim) {
-        toast.error('El correo y la confirmación de correo deben coincidir');
+        toast.error('El correo y la confirmacion de correo deben coincidir');
         return;
       }
 
@@ -328,13 +283,13 @@ const Usuarios = () => {
       }
 
       if (emailTrim && !emailRegex.test(emailTrim)) {
-        toast.error('Correo electrónico inválido');
+        toast.error('Correo electronico invalido');
         return;
       }
 
       const telefonoTrim = formData.telefono.trim();
       if (telefonoTrim && telefonoTrim.length > 15) {
-        toast.error('El teléfono no puede superar 15 caracteres');
+        toast.error('El telefono no puede superar 15 caracteres');
         return;
       }
 
@@ -355,7 +310,7 @@ const Usuarios = () => {
           return;
         }
         if (formData.password !== formData.confirmPassword) {
-          toast.error('Las contraseñas no coinciden');
+          toast.error('Las contrasenas no coinciden');
           return;
         }
       }
@@ -363,12 +318,12 @@ const Usuarios = () => {
       const payload = {
         nombreUsuario: nombreUsuarioTrim,
         rol: formData.rol,
+        rol_id: formData.rol_id || null,
         estado: formData.estado,
         email: emailTrim || undefined,
         telefono: telefonoTrim || undefined,
         indicativo: indicativoFinal,
         icono: formData.icono || undefined,
-        permisos: formData.permisos,
       };
 
       if (formData.password) {
@@ -455,6 +410,15 @@ const Usuarios = () => {
     }
   };
 
+  // Helper para obtener el nombre del rol asignado
+  const getRolNombre = (usuario) => {
+    if (usuario.rol_id && typeof usuario.rol_id === 'object') {
+      return usuario.rol_id.nombre;
+    }
+    // Fallback al campo rol legacy
+    return usuario.rol;
+  };
+
   if (!user || (user.rol !== 'admin' && user.rol !== 'superadmin')) {
     return (
       <Container maxWidth="md">
@@ -494,7 +458,7 @@ const Usuarios = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>Usuario</TableCell>
-                    <TableCell>Rol</TableCell>
+                    <TableCell>Rol asignado</TableCell>
                     <TableCell>Estado</TableCell>
                     <TableCell align="right">Acciones</TableCell>
                   </TableRow>
@@ -504,18 +468,23 @@ const Usuarios = () => {
                     <TableRow key={u._id}>
                       <TableCell>{u.nombreUsuario}</TableCell>
                       <TableCell>
-                        {u.rol}
-                        {u.esAdminPrincipal && (
-                          <Chip
-                            label="Principal"
-                            color="primary"
-                            size="small"
-                            sx={{ ml: 1 }}
-                          />
-                        )}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {getRolNombre(u)}
+                          {u.esAdminPrincipal && (
+                            <Chip
+                              label="Principal"
+                              color="primary"
+                              size="small"
+                            />
+                          )}
+                        </Box>
                       </TableCell>
                       <TableCell>
-                        {u.estado ? 'Activo' : 'Inactivo'}
+                        <Chip
+                          label={u.estado ? 'Activo' : 'Inactivo'}
+                          color={u.estado ? 'success' : 'default'}
+                          size="small"
+                        />
                       </TableCell>
                       <TableCell align="right">
                         <Tooltip
@@ -537,16 +506,18 @@ const Usuarios = () => {
                           title={
                             u.esAdminPrincipal
                               ? 'No se puede desactivar el administrador principal'
-                              : 'Desactivar usuario (no se eliminará definitivamente)'
+                              : 'Desactivar usuario (no se eliminara definitivamente)'
                           }
                         >
-                          <IconButton
-                            color="error"
-                            onClick={() => handleDelete(u._id)}
-                            disabled={u.esAdminPrincipal}
-                          >
-                            <FaTrash />
-                          </IconButton>
+                          <span>
+                            <IconButton
+                              color="error"
+                              onClick={() => handleDelete(u._id)}
+                              disabled={u.esAdminPrincipal}
+                            >
+                              <FaTrash />
+                            </IconButton>
+                          </span>
                         </Tooltip>
                       </TableCell>
                     </TableRow>
@@ -664,7 +635,7 @@ const Usuarios = () => {
             margin="normal"
             fullWidth
             name="telefono"
-            label="Teléfono"
+            label="Telefono"
             value={formData.telefono}
             onChange={handleChange}
             variant="outlined"
@@ -673,7 +644,7 @@ const Usuarios = () => {
 
           <Box sx={{ mt: 2 }}>
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              Ícono
+              Icono
             </Typography>
             <Box
               sx={{
@@ -710,7 +681,7 @@ const Usuarios = () => {
             margin="normal"
             fullWidth
             name="password"
-            label={editingUsuario ? 'Contraseña (dejar en blanco para no cambiar)' : 'Contraseña'}
+            label={editingUsuario ? 'Contrasena (dejar en blanco para no cambiar)' : 'Contrasena'}
             type={showPassword ? 'text' : 'password'}
             id="password"
             value={formData.password}
@@ -720,7 +691,7 @@ const Usuarios = () => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                    aria-label={showPassword ? 'Ocultar contrasena' : 'Ver contrasena'}
                     onClick={() => setShowPassword((p) => !p)}
                     onMouseDown={(e) => e.preventDefault()}
                     edge="end"
@@ -737,7 +708,7 @@ const Usuarios = () => {
               margin="normal"
               fullWidth
               name="confirmPassword"
-              label="Confirmar contraseña"
+              label="Confirmar contrasena"
               type={showConfirmPassword ? 'text' : 'password'}
               id="confirmPassword"
               value={formData.confirmPassword}
@@ -750,14 +721,14 @@ const Usuarios = () => {
               helperText={
                 formData.confirmPassword.length > 0 &&
                   formData.confirmPassword !== formData.password
-                  ? 'Las contraseñas no coinciden'
+                  ? 'Las contrasenas no coinciden'
                   : ''
               }
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
-                      aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                      aria-label={showConfirmPassword ? 'Ocultar contrasena' : 'Ver contrasena'}
                       onClick={() => setShowConfirmPassword((p) => !p)}
                       onMouseDown={(e) => e.preventDefault()}
                       edge="end"
@@ -784,13 +755,13 @@ const Usuarios = () => {
               />
               <Chip
                 size="small"
-                label="1 mayúscula"
+                label="1 mayuscula"
                 color={/[A-Z]/.test(formData.password) ? 'success' : 'default'}
                 variant="outlined"
               />
               <Chip
                 size="small"
-                label="1 número"
+                label="1 numero"
                 color={/[0-9]/.test(formData.password) ? 'success' : 'default'}
                 variant="outlined"
               />
@@ -810,28 +781,66 @@ const Usuarios = () => {
               />
             </Box>
           )}
+
+          {/* Rol Asignado - nuevo campo que apunta a la coleccion de Roles */}
           <FormControl
             margin="normal"
             fullWidth
             disabled={formData.esAdminPrincipal}
           >
-            <InputLabel id="rol-label">Rol</InputLabel>
+            <InputLabel id="rol-id-label">Rol asignado</InputLabel>
             <Select
-              labelId="rol-label"
-              id="rol"
-              name="rol"
-              value={formData.rol}
-              label="Rol"
+              labelId="rol-id-label"
+              id="rol_id"
+              name="rol_id"
+              value={formData.rol_id}
+              label="Rol asignado"
               onChange={handleChange}
             >
-              {user?.rol === 'superadmin' && (
-                <MenuItem value="superadmin">Superadmin</MenuItem>
-              )}
-              <MenuItem value="admin">Admin</MenuItem>
-              <MenuItem value="operador">Operador</MenuItem>
-              <MenuItem value="usuario">Usuario</MenuItem>
+              <MenuItem value="">
+                <em>Sin rol asignado</em>
+              </MenuItem>
+              {roles.map((r) => (
+                <MenuItem key={r._id} value={r._id}>
+                  {r.nombre}
+                  {r.descripcion && (
+                    <Typography
+                      component="span"
+                      variant="caption"
+                      sx={{ ml: 1, color: 'text.secondary' }}
+                    >
+                      - {r.descripcion}
+                    </Typography>
+                  )}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
+
+          {/* Rol legacy - solo visible para superadmin */}
+          {user?.rol === 'superadmin' && (
+            <FormControl
+              margin="normal"
+              fullWidth
+              disabled={formData.esAdminPrincipal}
+            >
+              <InputLabel id="rol-label">Rol del sistema (legacy)</InputLabel>
+              <Select
+                labelId="rol-label"
+                id="rol"
+                name="rol"
+                value={formData.rol}
+                label="Rol del sistema (legacy)"
+                onChange={handleChange}
+              >
+                <MenuItem value="superadmin">Superadmin</MenuItem>
+                <MenuItem value="admin">Admin</MenuItem>
+                <MenuItem value="operador">Operador</MenuItem>
+                <MenuItem value="usuario">Usuario</MenuItem>
+              </Select>
+            </FormControl>
+          )}
+
           <FormControlLabel
             control={
               <Switch
@@ -844,87 +853,6 @@ const Usuarios = () => {
             label={formData.estado ? 'Activo' : 'Inactivo'}
             sx={{ mt: 1 }}
           />
-
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              Permisos por módulo
-            </Typography>
-            {MODULOS_PERMISOS.map((m) => (
-              <Box
-                key={m.key}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 1,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 1,
-                  px: 1.5,
-                  py: 1,
-                  mb: 1,
-                }}
-              >
-                <Typography variant="body2" sx={{ minWidth: 170 }}>
-                  {m.label}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Tooltip title="Crear">
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          size="small"
-                          checked={formData.permisos?.[m.key]?.crear === true}
-                          onChange={() => handlePermisoToggle(m.key, 'crear')}
-                        />
-                      }
-                      label="C"
-                      sx={{ m: 0 }}
-                    />
-                  </Tooltip>
-                  <Tooltip title="Ver">
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          size="small"
-                          checked={formData.permisos?.[m.key]?.ver === true}
-                          onChange={() => handlePermisoToggle(m.key, 'ver')}
-                        />
-                      }
-                      label="V"
-                      sx={{ m: 0 }}
-                    />
-                  </Tooltip>
-                  <Tooltip title="Editar">
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          size="small"
-                          checked={formData.permisos?.[m.key]?.editar === true}
-                          onChange={() => handlePermisoToggle(m.key, 'editar')}
-                        />
-                      }
-                      label="E"
-                      sx={{ m: 0 }}
-                    />
-                  </Tooltip>
-                  <Tooltip title="Eliminar">
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          size="small"
-                          checked={formData.permisos?.[m.key]?.eliminar === true}
-                          onChange={() => handlePermisoToggle(m.key, 'eliminar')}
-                        />
-                      }
-                      label="D"
-                      sx={{ m: 0 }}
-                    />
-                  </Tooltip>
-                </Box>
-              </Box>
-            ))}
-          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseModal}>Cancelar</Button>
