@@ -39,6 +39,10 @@ export const fetchNotificacionesEventosPremium = () => {
   return api.get(`${EVENTOS_PREMIUM_URL}/notificaciones`);
 };
 
+export const marcarNotificacionEventosPremiumLeida = (fichaId) => {
+  return api.put(`${EVENTOS_PREMIUM_URL}/notificaciones/${fichaId}/leida`);
+};
+
 export const fetchFichasEventoPremium = (eventoId) => {
   return api.get(`${EVENTOS_PREMIUM_URL}/${eventoId}/fichas`);
 };

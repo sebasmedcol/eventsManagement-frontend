@@ -1,6 +1,6 @@
 import { useContext } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
-import { FaUser, FaUsers, FaBoxOpen, FaShoppingCart, FaListOl, FaTachometerAlt, FaCalendarAlt } from 'react-icons/fa';
+import { FaUser, FaUsers, FaBoxOpen, FaShoppingCart, FaListOl, FaTachometerAlt, FaCalendarAlt, FaCog } from 'react-icons/fa';
 import AuthContext from '../context/AuthContext';
 import {
   Box,
@@ -45,6 +45,7 @@ const Sidebar = ({ open, onClose, width = 240 }) => {
     { text: 'Consecutivos', icon: <FaListOl />, path: '/consecutivos' },
     { text: 'Cotizaciones', icon: <FaListOl />, path: '/cotizaciones' },
     { text: 'Disponibilidad', icon: <FaCalendarAlt />, path: '/disponibilidad' },
+    { text: 'Configuración', icon: <FaCog />, path: '/configuraciones' },
     ...(user.rol === 'admin' || user.rol === 'superadmin'
       ? [{ text: 'Usuarios', icon: <FaUser />, path: '/usuarios' }]
       : []),

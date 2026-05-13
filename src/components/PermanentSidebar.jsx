@@ -1,6 +1,6 @@
 import { cloneElement, isValidElement, useContext } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
-import { FaUser, FaUsers, FaBoxOpen, FaShoppingCart, FaListOl, FaTachometerAlt, FaCalendarAlt, FaUserTag } from 'react-icons/fa';
+import { FaUser, FaUsers, FaBoxOpen, FaShoppingCart, FaListOl, FaTachometerAlt, FaCalendarAlt, FaUserTag, FaCog } from 'react-icons/fa';
 import AuthContext from '../context/AuthContext';
 import {
   Box,
@@ -72,6 +72,7 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
     ...(canSee('consecutivos') ? [{ text: 'Consecutivos', icon: <FaListOl />, path: '/consecutivos' }] : []),
     ...(canSee('cotizaciones') ? [{ text: 'Cotizaciones', icon: <FaListOl />, path: '/cotizaciones' }] : []),
     ...(canSee('disponibilidad') ? [{ text: 'Disponibilidad', icon: <FaCalendarAlt />, path: '/disponibilidad' }] : []),
+    { text: 'Configuración', icon: <FaCog />, path: '/configuraciones' },
     ...(user.rol === 'admin' || user.rol === 'superadmin'
       ? [
           { text: 'Usuarios', icon: <FaUser />, path: '/usuarios' },

@@ -24,14 +24,23 @@ import InputAdornment from '@mui/material/InputAdornment';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
+const DOCUMENTO_EMPRESA = {
+  NIT: { label: 'NIT', maxLength: 20 },
+  RUT: { label: 'RUT', maxLength: 12 },
+};
+
 const Register = () => {
   const [formData, setFormData] = useState({
     nombre: '',
-    nit: '',
+    documentoTipo: 'NIT',
+    documentoNumero: '',
     direccion: '',
     telefono: '',
     email: '',
     confirmEmail: '',
+    adminTelefono: '',
+    adminEmail: '',
+    adminConfirmEmail: '',
     plan: 'free',
     nombreUsuario: '',
     password: '',
@@ -40,11 +49,15 @@ const Register = () => {
 
   const {
     nombre,
-    nit,
+    documentoTipo,
+    documentoNumero,
     direccion,
     telefono,
     email,
     confirmEmail,
+    adminTelefono,
+    adminEmail,
+    adminConfirmEmail,
     plan,
     nombreUsuario,
     password,
@@ -70,7 +83,25 @@ const Register = () => {
   }, [error]);
 
   const onChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'documentoTipo') {
+      const cfg = DOCUMENTO_EMPRESA[value] || DOCUMENTO_EMPRESA.NIT;
+      setFormData((prev) => ({
+        ...prev,
+        documentoTipo: value,
+        documentoNumero: String(prev.documentoNumero || '').slice(0, cfg.maxLength),
+      }));
+      return;
+    }
+    if (name === 'documentoNumero') {
+      const cfg = DOCUMENTO_EMPRESA[documentoTipo] || DOCUMENTO_EMPRESA.NIT;
+      setFormData((prev) => ({
+        ...prev,
+        documentoNumero: String(value || '').slice(0, cfg.maxLength),
+      }));
+      return;
+    }
+    setFormData({ ...formData, [name]: value });
   };
 
   useEffect(() => {
@@ -145,8 +176,17 @@ const Register = () => {
   const onSubmit = async (e) => {
     e.preventDefault();
 
-    if (!nombre || !direccion || !telefono || !email || !nombreUsuario || !password) {
-      toast.error('Por favor complete los campos obligatorios (NIT es opcional)');
+    if (
+      !nombre ||
+      !direccion ||
+      !telefono ||
+      !email ||
+      !nombreUsuario ||
+      !password ||
+      !adminTelefono ||
+      !adminEmail
+    ) {
+      toast.error('Por favor complete los campos obligatorios (NIT/RUT es opcional)');
       return;
     }
 
@@ -157,6 +197,21 @@ const Register = () => {
 
     if (email.trim().toLowerCase() !== confirmEmail.trim().toLowerCase()) {
       toast.error('Los correos no coinciden');
+      return;
+    }
+
+    if (adminEmail.trim().length > 254 || adminConfirmEmail.trim().length > 254) {
+      toast.error('El correo del usuario no puede superar 254 caracteres');
+      return;
+    }
+
+    if (adminEmail.trim().toLowerCase() !== adminConfirmEmail.trim().toLowerCase()) {
+      toast.error('Los correos del usuario no coinciden');
+      return;
+    }
+
+    if (adminTelefono.trim().length > 15) {
+      toast.error('El teléfono del usuario no puede superar 15 caracteres');
       return;
     }
 
@@ -183,10 +238,14 @@ const Register = () => {
 
     const payload = {
       nombre,
-      nit,
+      tipoDocumento: documentoTipo,
+      nit: documentoNumero,
       direccion,
       telefono,
       email,
+      adminTelefono,
+      adminEmail,
+      adminConfirmEmail,
       plan,
       nombreUsuario,
       password,
@@ -256,17 +315,34 @@ const Register = () => {
                       : ''
               }
             />
-            <TextField
-              margin="normal"
-              fullWidth
-              id="nit"
-              label="NIT"
-              name="nit"
-              value={nit}
-              onChange={onChange}
-              variant="outlined"
-              inputProps={{ maxLength: 20 }}
-            />
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <FormControl sx={{ minWidth: 160, flexGrow: 0 }} margin="normal">
+                <InputLabel>Documento</InputLabel>
+                <Select
+                  name="documentoTipo"
+                  label="Documento"
+                  value={documentoTipo}
+                  onChange={onChange}
+                >
+                  <MenuItem value="NIT">NIT</MenuItem>
+                  <MenuItem value="RUT">RUT</MenuItem>
+                </Select>
+              </FormControl>
+              <TextField
+                margin="normal"
+                fullWidth
+                id="documentoNumero"
+                label={`Número de ${DOCUMENTO_EMPRESA[documentoTipo]?.label || 'documento'} (opcional)`}
+                name="documentoNumero"
+                value={documentoNumero}
+                onChange={onChange}
+                variant="outlined"
+                inputProps={{
+                  maxLength: DOCUMENTO_EMPRESA[documentoTipo]?.maxLength || 20,
+                }}
+                helperText={`Máx ${DOCUMENTO_EMPRESA[documentoTipo]?.maxLength || 20} caracteres`}
+              />
+            </Box>
             <TextField
               margin="normal"
               required
@@ -369,6 +445,54 @@ const Register = () => {
                     : usuarioNombreStatus === 'available'
                       ? 'Nombre disponible'
                       : ''
+              }
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="adminTelefono"
+              label="Teléfono (usuario)"
+              name="adminTelefono"
+              value={adminTelefono}
+              onChange={onChange}
+              variant="outlined"
+              inputProps={{ maxLength: 15 }}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="adminEmail"
+              label="Correo (usuario)"
+              name="adminEmail"
+              type="email"
+              value={adminEmail}
+              onChange={onChange}
+              variant="outlined"
+              inputProps={{ maxLength: 254 }}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="adminConfirmEmail"
+              label="Confirmar correo (usuario)"
+              name="adminConfirmEmail"
+              type="email"
+              value={adminConfirmEmail}
+              onChange={onChange}
+              variant="outlined"
+              inputProps={{ maxLength: 254 }}
+              error={
+                adminConfirmEmail.length > 0 &&
+                adminEmail.trim().toLowerCase() !== adminConfirmEmail.trim().toLowerCase()
+              }
+              helperText={
+                adminConfirmEmail.length > 0 &&
+                adminEmail.trim().toLowerCase() !== adminConfirmEmail.trim().toLowerCase()
+                  ? 'Los correos del usuario no coinciden'
+                  : ''
               }
             />
             <TextField

@@ -19,6 +19,9 @@ import {
   FaUserEdit,
   FaUserPlus,
   FaUserMinus,
+  FaCog,
+  FaQuestionCircle,
+  FaEnvelope,
 } from 'react-icons/fa';
 import AuthContext from '../context/AuthContext';
 import AppBar from '@mui/material/AppBar';
@@ -38,7 +41,7 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import CircularProgress from '@mui/material/CircularProgress';
 import { getEmpresasAdmin } from '../services/empresaAdminService';
-import { fetchNotificacionesEventosPremium } from '../services/eventoService';
+import { fetchNotificacionesEventosPremium, marcarNotificacionEventosPremiumLeida } from '../services/eventoService';
 
 const getIconoPorRol = (rol) => {
   if (rol === 'superadmin') return 'userShield';
@@ -78,6 +81,7 @@ const Navbar = ({ onToggleColorMode, mode, sidebarCollapsed, onToggleSidebarColl
   const [pendingEmpresas, setPendingEmpresas] = useState([]);
   const [eventosNotif, setEventosNotif] = useState([]);
   const [anchorNotif, setAnchorNotif] = useState(null);
+  const [anchorUser, setAnchorUser] = useState(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const lastNotifCount = useRef(0);
 
@@ -191,6 +195,29 @@ const Navbar = ({ onToggleColorMode, mode, sidebarCollapsed, onToggleSidebarColl
     setAnchorNotif(null);
   };
 
+  const handleOpenUserMenu = (event) => {
+    setAnchorUser(event.currentTarget);
+  };
+
+  const handleCloseUserMenu = () => {
+    setAnchorUser(null);
+  };
+
+  const handleGoToConfig = () => {
+    handleCloseUserMenu();
+    navigate('/configuraciones');
+  };
+
+  const handleHelp = () => {
+    handleCloseUserMenu();
+    toast.info('Ayuda: próximamente');
+  };
+
+  const handleContact = () => {
+    handleCloseUserMenu();
+    toast.info('Contacto: próximamente');
+  };
+
   const handleGoToEmpresas = (empresaId) => {
     handleCloseNotif();
     navigate(`/superadmin/empresas?focus=${empresaId}`);
@@ -202,6 +229,8 @@ const Navbar = ({ onToggleColorMode, mode, sidebarCollapsed, onToggleSidebarColl
       navigate('/eventos-premium');
       return;
     }
+    setEventosNotif((prev) => prev.filter((x) => x._id !== n._id));
+    marcarNotificacionEventosPremiumLeida(n.fichaId).catch(() => {});
     navigate(`/eventos-premium/${n.eventoId}/gestion?focusFicha=${n.fichaId}`);
   };
 
@@ -330,10 +359,37 @@ const Navbar = ({ onToggleColorMode, mode, sidebarCollapsed, onToggleSidebarColl
                     : 'Usuario'
                 }
               >
-                <IconButton color="inherit" sx={{ mr: 1 }}>
+                <IconButton color="inherit" sx={{ mr: 1 }} onClick={handleOpenUserMenu}>
                   <UserIcon />
                 </IconButton>
               </Tooltip>
+
+              <Menu
+                anchorEl={anchorUser}
+                open={Boolean(anchorUser)}
+                onClose={handleCloseUserMenu}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              >
+                <MenuItem onClick={handleGoToConfig}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <FaCog />
+                    <span>Configuración</span>
+                  </Box>
+                </MenuItem>
+                <MenuItem onClick={handleHelp}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <FaQuestionCircle />
+                    <span>Ayuda</span>
+                  </Box>
+                </MenuItem>
+                <MenuItem onClick={handleContact}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <FaEnvelope />
+                    <span>Contacto</span>
+                  </Box>
+                </MenuItem>
+              </Menu>
 
               <Button
                 color="error"

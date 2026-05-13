@@ -33,6 +33,7 @@ import DisponibilidadProducto from './pages/DisponibilidadProducto';
 import EmpresasAdmin from './pages/EmpresasAdmin';
 import EmpresaPendiente from './pages/EmpresaPendiente';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import Configuraciones from './pages/Configuraciones';
 
 // Design tokens inspired by a modern admin template
 const getDesignTokens = (mode) => ({
@@ -322,6 +323,12 @@ function App() {
                   <Route path="/superadmin/empresas" element={
                     <ProtectedRoute>
                       <EmpresasAdmin />
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path="/configuraciones" element={
+                    <ProtectedRoute>
+                      <Configuraciones />
                     </ProtectedRoute>
                   } />
                 </Routes>

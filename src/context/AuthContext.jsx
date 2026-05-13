@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api'; // ✅ usar instancia de axios configurada
 
 const AuthContext = createContext();
+const CONFIG_STORAGE_KEY = 'ian_config';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -22,10 +23,17 @@ export const AuthProvider = ({ children }) => {
           const response = await api.get('/auth/me');
           setUser(response.data);
           setIsAuthenticated(true);
+          try {
+            const cfg = await api.get('/config');
+            localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(cfg.data));
+          } catch {
+            localStorage.removeItem(CONFIG_STORAGE_KEY);
+          }
         }
       } catch (error) {
         console.error(error);
         localStorage.removeItem('token');
+        localStorage.removeItem(CONFIG_STORAGE_KEY);
         setUser(null);
         setIsAuthenticated(false);
         setError('Sesión expirada. Por favor inicie sesión nuevamente.');
@@ -50,6 +58,12 @@ export const AuthProvider = ({ children }) => {
       const me = await api.get('/auth/me');
       setUser(me.data);
       setIsAuthenticated(true);
+      try {
+        const cfg = await api.get('/config');
+        localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(cfg.data));
+      } catch {
+        localStorage.removeItem(CONFIG_STORAGE_KEY);
+      }
 
       navigate('/dashboard');
       return true;
@@ -77,6 +91,12 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', token);
       setUser(userData);
       setIsAuthenticated(true);
+      try {
+        const cfg = await api.get('/config');
+        localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(cfg.data));
+      } catch {
+        localStorage.removeItem(CONFIG_STORAGE_KEY);
+      }
 
       if (
         empresa &&
@@ -97,6 +117,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem(CONFIG_STORAGE_KEY);
     setUser(null);
     setIsAuthenticated(false);
     navigate('/login');

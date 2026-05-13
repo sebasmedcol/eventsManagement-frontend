@@ -22,11 +22,31 @@ import {
   Divider
 } from '@mui/material';
 
+const CONFIG_STORAGE_KEY = 'ian_config';
+
+const readStoredConfig = () => {
+  try {
+    const raw = localStorage.getItem(CONFIG_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+const buildLogoDataUrl = (logo) => {
+  if (!logo?.format || !logo?.dataBase64) return '';
+  if (logo.format === 'svg') return `data:image/svg+xml;base64,${logo.dataBase64}`;
+  if (logo.format === 'webp') return `data:image/webp;base64,${logo.dataBase64}`;
+  return '';
+};
+
 const VentaDetalle = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [venta, setVenta] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [config, setConfig] = useState(() => readStoredConfig());
 
   const fetchVenta = useCallback(async () => {
     try {
@@ -44,6 +64,10 @@ const VentaDetalle = () => {
   useEffect(() => {
     fetchVenta();
   }, [fetchVenta]);
+
+  useEffect(() => {
+    setConfig(readStoredConfig());
+  }, []);
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('es-CO', {
@@ -106,6 +130,12 @@ const VentaDetalle = () => {
     );
   }
 
+  const empresaNombre = config?.empresa?.nombre || 'Empresa';
+  const empresaNit = config?.empresa?.nit || '';
+  const empresaTelefono = config?.empresa?.telefono || '';
+  const mostrarLogo = config?.empresa?.mostrarLogoEnComprobante === true;
+  const logoSrc = mostrarLogo ? buildLogoDataUrl(config?.empresa?.logo) : '';
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box className="print-controls" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
@@ -149,22 +179,25 @@ const VentaDetalle = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
               {/* Logo arriba a la izquierda */}
               <Box sx={{ width: 96, flexShrink: 0 }}>
-                <img src="/logo.png" alt="IAN Sonido Logo" style={{ width: '96px', height: 'auto' }} />
+                {logoSrc ? (
+                  <img src={logoSrc} alt="Logo" style={{ width: '96px', height: 'auto' }} />
+                ) : (
+                  <Box sx={{ width: '96px', height: 32 }} />
+                )}
               </Box>
               {/* Títulos centrados */}
               <Box sx={{ flexGrow: 1, textAlign: 'center' }}>
                 <Typography variant="h4" component="h2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                  IAN SONIDO
+                  {empresaNombre}
                 </Typography>
                 <Typography variant="h6" color="text.secondary">
                   Comprobante de Pago
                 </Typography>
-                <Typography variant="body1" sx={{ mt: 1 }}>
-                  SEBASTIAN UPEGUI
-                </Typography>
-                <Typography variant="body1">
-                  Rut: 1'152.440.562-8
-                </Typography>
+                {empresaNit && (
+                  <Typography variant="body1" sx={{ mt: 1 }}>
+                    NIT/RUT: {empresaNit}
+                  </Typography>
+                )}
               </Box>
             </Box>
             <Grid container spacing={2}>
@@ -329,7 +362,7 @@ const VentaDetalle = () => {
               Gracias por su compra
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              IAN SONIDO - Teléfono: 3022798519
+              {empresaNombre}{empresaTelefono ? ` - Teléfono: ${empresaTelefono}` : ''}
             </Typography>
           </Box>
         </Box>
