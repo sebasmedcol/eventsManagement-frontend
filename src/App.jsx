@@ -77,14 +77,12 @@ const getDesignTokens = (mode) => ({
     MuiAppBar: {
       styleOverrides: {
         root: ({ theme }) => ({
-          backgroundColor:
-            theme.palette.mode === 'light'
-              ? 'rgba(255,255,255,0.8)'
-              : 'rgba(17,24,39,0.8)',
-          color: theme.palette.text.primary,
-          backdropFilter: 'blur(6px)',
+          background: 'linear-gradient(90deg, rgba(1,62,80,0.75) 0%, rgba(251,107,18,0.5) 100%)',
+          color: '#ffffff',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
           boxShadow: 'none',
-          borderBottom: `1px solid ${theme.palette.divider}`,
+          borderBottom: '1px solid rgba(255,255,255,0.10)',
         }),
       },
     },
