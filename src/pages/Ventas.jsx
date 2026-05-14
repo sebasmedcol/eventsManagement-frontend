@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FaPlus, FaEdit, FaTrash, FaSearch, FaEye, FaBan } from 'react-icons/fa';
 import api from '../services/api';
 import { toast } from 'react-toastify';
+import usePermisos from '../hooks/usePermisos';
 import {
   Box,
   Typography,
@@ -34,6 +35,7 @@ import {
 } from '@mui/material';
 
 const Ventas = () => {
+  const { puedeCrear, puedeEditar, puedeEliminar } = usePermisos();
   const [ventas, setVentas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -173,15 +175,17 @@ const fetchVentas = async () => {
         <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
           Módulo de Ventas
         </Typography>
-        <Button
-          component={Link}
-          to="/ventas/nueva"
-          variant="contained"
-          color="secondary"
-          startIcon={<FaPlus />}
-        >
-          Nueva Venta
-        </Button>
+        {puedeCrear('ventas') && (
+          <Button
+            component={Link}
+            to="/ventas/nueva"
+            variant="contained"
+            color="secondary"
+            startIcon={<FaPlus />}
+          >
+            Nueva Venta
+          </Button>
+        )}
       </Box>
 
       {/* Controles de búsqueda y paginación */}
@@ -309,7 +313,7 @@ color={venta.estado === 'activa' ? 'success' : 'error'}
       <FaEye />
     </IconButton>
 
-    {venta.estado === 'activa' && (
+    {venta.estado === 'activa' && puedeEditar('ventas') && (
       <>
         <IconButton
           component={Link}
@@ -331,7 +335,7 @@ color={venta.estado === 'activa' ? 'success' : 'error'}
       </>
     )}
 
-    {venta.estado === 'cancelada' && (
+    {venta.estado === 'cancelada' && puedeEliminar('ventas') && (
       <IconButton
         onClick={() => openModal(venta)}
         color="error"

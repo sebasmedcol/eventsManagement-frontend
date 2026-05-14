@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FaPlus, FaEdit, FaTrash, FaSearch, FaEye } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import api from '../services/api'; // ✅ ahora usamos api.js
+import usePermisos from '../hooks/usePermisos';
 import {
   Box,
   Typography,
@@ -34,6 +35,7 @@ import {
 } from '@mui/material';
 
 const Clientes = () => {
+  const { puedeCrear, puedeEditar, puedeEliminar } = usePermisos();
   const indicativos = ['+57', '+1', '+34', '+52', '+54', '+56', '+51', '+55'];
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -297,14 +299,16 @@ const Clientes = () => {
         <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
           Módulo de Clientes
         </Typography>
-        <Button
-          onClick={() => openModal('crear')}
-          variant="contained"
-          color="primary"
-          startIcon={<FaPlus />}
-        >
-          Crear Cliente
-        </Button>
+        {puedeCrear('clientes') && (
+          <Button
+            onClick={() => openModal('crear')}
+            variant="contained"
+            color="primary"
+            startIcon={<FaPlus />}
+          >
+            Crear Cliente
+          </Button>
+        )}
       </Box>
 
       {/* Controles de búsqueda y paginación */}
@@ -406,22 +410,26 @@ const Clientes = () => {
                           >
                             <FaEye />
                           </IconButton>
-                          <IconButton
-                            onClick={() => openModal('editar', cliente)}
-                            color="primary"
-                            size="small"
-                            title="Editar"
-                          >
-                            <FaEdit />
-                          </IconButton>
-                          <IconButton
-                            onClick={() => openModal('eliminar', cliente)}
-                            color="error"
-                            size="small"
-                            title="Eliminar"
-                          >
-                            <FaTrash />
-                          </IconButton>
+                          {puedeEditar('clientes') && (
+                            <IconButton
+                              onClick={() => openModal('editar', cliente)}
+                              color="primary"
+                              size="small"
+                              title="Editar"
+                            >
+                              <FaEdit />
+                            </IconButton>
+                          )}
+                          {puedeEliminar('clientes') && (
+                            <IconButton
+                              onClick={() => openModal('eliminar', cliente)}
+                              color="error"
+                              size="small"
+                              title="Eliminar"
+                            >
+                              <FaTrash />
+                            </IconButton>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>

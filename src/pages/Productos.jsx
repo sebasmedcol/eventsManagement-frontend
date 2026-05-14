@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FaPlus, FaEdit, FaTrash, FaSearch, FaEye } from 'react-icons/fa';
 import api from '../services/api';
 import { toast } from 'react-toastify';
+import usePermisos from '../hooks/usePermisos';
 import {
   Box,
   Typography,
@@ -34,6 +35,7 @@ import {
 } from '@mui/material';
 
 const Productos = () => {
+  const { puedeCrear, puedeEditar, puedeEliminar } = usePermisos();
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -270,14 +272,16 @@ const filteredProductos = productos.filter(producto =>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
           Módulo de Productos
         </Typography>
-        <Button
-          onClick={() => openModal('crear')}
-          variant="contained"
-          color="success"
-          startIcon={<FaPlus />}
-        >
-          Crear Producto
-        </Button>
+        {puedeCrear('productos') && (
+          <Button
+            onClick={() => openModal('crear')}
+            variant="contained"
+            color="success"
+            startIcon={<FaPlus />}
+          >
+            Crear Producto
+          </Button>
+        )}
       </Box>
 
       {/* Controles de búsqueda y paginación */}
@@ -395,22 +399,26 @@ const filteredProductos = productos.filter(producto =>
                           >
                             <FaEye />
                           </IconButton>
-                          <IconButton
-                            onClick={() => openModal('editar', producto)}
-                            color="primary"
-                            size="small"
-                            title="Editar"
-                          >
-                            <FaEdit />
-                          </IconButton>
-                          <IconButton
-                            onClick={() => openModal('eliminar', producto)}
-                            color="error"
-                            size="small"
-                            title="Eliminar"
-                          >
-                            <FaTrash />
-                          </IconButton>
+                          {puedeEditar('productos') && (
+                            <IconButton
+                              onClick={() => openModal('editar', producto)}
+                              color="primary"
+                              size="small"
+                              title="Editar"
+                            >
+                              <FaEdit />
+                            </IconButton>
+                          )}
+                          {puedeEliminar('productos') && (
+                            <IconButton
+                              onClick={() => openModal('eliminar', producto)}
+                              color="error"
+                              size="small"
+                              title="Eliminar"
+                            >
+                              <FaTrash />
+                            </IconButton>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>

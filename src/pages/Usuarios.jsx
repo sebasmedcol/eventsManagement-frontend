@@ -782,7 +782,7 @@ const Usuarios = () => {
             </Box>
           )}
 
-          {/* Rol Asignado - nuevo campo que apunta a la coleccion de Roles */}
+          {/* Rol Asignado - campo que apunta a la coleccion de Roles */}
           <FormControl
             margin="normal"
             fullWidth
@@ -816,30 +816,6 @@ const Usuarios = () => {
               ))}
             </Select>
           </FormControl>
-
-          {/* Rol legacy - solo visible para superadmin */}
-          {user?.rol === 'superadmin' && (
-            <FormControl
-              margin="normal"
-              fullWidth
-              disabled={formData.esAdminPrincipal}
-            >
-              <InputLabel id="rol-label">Rol del sistema (legacy)</InputLabel>
-              <Select
-                labelId="rol-label"
-                id="rol"
-                name="rol"
-                value={formData.rol}
-                label="Rol del sistema (legacy)"
-                onChange={handleChange}
-              >
-                <MenuItem value="superadmin">Superadmin</MenuItem>
-                <MenuItem value="admin">Admin</MenuItem>
-                <MenuItem value="operador">Operador</MenuItem>
-                <MenuItem value="usuario">Usuario</MenuItem>
-              </Select>
-            </FormControl>
-          )}
 
           <FormControlLabel
             control={

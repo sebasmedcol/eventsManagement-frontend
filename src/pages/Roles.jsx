@@ -34,22 +34,34 @@ import Checkbox from '@mui/material/Checkbox';
 import AuthContext from '../context/AuthContext';
 import { getRoles, createRol, updateRol, deleteRol } from '../services/rolService';
 
+// Definimos permisos disponibles por módulo
+// 'full' = crear, ver, editar, eliminar
+// 'view_only' = solo ver
+// 'view_edit' = ver y editar
 const MODULOS_PERMISOS = [
-  { key: 'clientes', label: 'Clientes' },
-  { key: 'productos', label: 'Productos' },
-  { key: 'ventas', label: 'Ventas' },
-  { key: 'eventos', label: 'Cronograma de eventos' },
-  { key: 'consecutivos', label: 'Consecutivos' },
-  { key: 'cotizaciones', label: 'Cotizaciones' },
-  { key: 'disponibilidad', label: 'Disponibilidad' },
-  { key: 'usuarios', label: 'Usuarios' },
-  { key: 'roles', label: 'Roles' },
+  { key: 'dashboard', label: 'Dashboard', permisos: ['ver'] },
+  { key: 'clientes', label: 'Clientes', permisos: ['crear', 'ver', 'editar', 'eliminar'] },
+  { key: 'productos', label: 'Productos', permisos: ['crear', 'ver', 'editar', 'eliminar'] },
+  { key: 'ventas', label: 'Ventas', permisos: ['crear', 'ver', 'editar', 'eliminar'] },
+  { key: 'eventos', label: 'Cronograma de eventos', permisos: ['crear', 'ver', 'editar', 'eliminar'] },
+  { key: 'consecutivos', label: 'Consecutivos', permisos: ['crear', 'ver', 'editar', 'eliminar'] },
+  { key: 'cotizaciones', label: 'Cotizaciones', permisos: ['crear', 'ver', 'editar', 'eliminar'] },
+  { key: 'disponibilidad', label: 'Disponibilidad', permisos: ['ver'] },
+  { key: 'configuracion', label: 'Configuracion', permisos: ['ver', 'editar'] },
+  { key: 'usuarios', label: 'Usuarios', permisos: ['crear', 'ver', 'editar', 'eliminar'] },
+  { key: 'roles', label: 'Roles', permisos: ['crear', 'ver', 'editar', 'eliminar'] },
+  { key: 'dashboard_global', label: 'Dashboard global', permisos: ['ver'] },
+  { key: 'empresas', label: 'Empresas', permisos: ['ver'] },
 ];
 
 const buildPermisosDefault = () => {
   const base = {};
   MODULOS_PERMISOS.forEach((m) => {
-    base[m.key] = { crear: false, ver: false, editar: false, eliminar: false };
+    const permisoObj = {};
+    ['crear', 'ver', 'editar', 'eliminar'].forEach((accion) => {
+      permisoObj[accion] = false;
+    });
+    base[m.key] = permisoObj;
   });
   return base;
 };
@@ -161,24 +173,26 @@ const Roles = () => {
     }));
   };
 
-  const handleToggleModuloCompleto = (modulo) => {
+const handleToggleModuloCompleto = (modulo) => {
+    const moduloConfig = MODULOS_PERMISOS.find((m) => m.key === modulo);
+    if (!moduloConfig) return;
+    
     const currentPermisos = formData.permisos[modulo] || {};
-    const allActive =
-      currentPermisos.crear &&
-      currentPermisos.ver &&
-      currentPermisos.editar &&
-      currentPermisos.eliminar;
+    // Solo verificar las acciones disponibles para este módulo
+    const allActive = moduloConfig.permisos.every(
+      (accion) => currentPermisos[accion] === true
+    );
+
+    const newPermisos = { crear: false, ver: false, editar: false, eliminar: false };
+    moduloConfig.permisos.forEach((accion) => {
+      newPermisos[accion] = !allActive;
+    });
 
     setFormData((prev) => ({
       ...prev,
       permisos: {
         ...prev.permisos,
-        [modulo]: {
-          crear: !allActive,
-          ver: !allActive,
-          editar: !allActive,
-          eliminar: !allActive,
-        },
+        [modulo]: newPermisos,
       },
     }));
   };
@@ -406,13 +420,12 @@ const Roles = () => {
             <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
               C = Crear, V = Ver, E = Editar, D = Eliminar. Haz clic en el nombre del modulo para activar/desactivar todos los permisos.
             </Typography>
-            {MODULOS_PERMISOS.map((m) => {
+{MODULOS_PERMISOS.map((m) => {
               const moduloPermisos = formData.permisos[m.key] || {};
-              const allActive =
-                moduloPermisos.crear &&
-                moduloPermisos.ver &&
-                moduloPermisos.editar &&
-                moduloPermisos.eliminar;
+              // Verificar si todas las acciones disponibles están activas
+              const allActive = m.permisos.every(
+                (accion) => moduloPermisos[accion] === true
+              );
               return (
                 <Box
                   key={m.key}
@@ -445,58 +458,66 @@ const Roles = () => {
                     </Typography>
                   </Tooltip>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Tooltip title="Crear">
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            size="small"
-                            checked={formData.permisos?.[m.key]?.crear === true}
-                            onChange={() => handlePermisoToggle(m.key, 'crear')}
-                          />
-                        }
-                        label="C"
-                        sx={{ m: 0 }}
-                      />
-                    </Tooltip>
-                    <Tooltip title="Ver">
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            size="small"
-                            checked={formData.permisos?.[m.key]?.ver === true}
-                            onChange={() => handlePermisoToggle(m.key, 'ver')}
-                          />
-                        }
-                        label="V"
-                        sx={{ m: 0 }}
-                      />
-                    </Tooltip>
-                    <Tooltip title="Editar">
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            size="small"
-                            checked={formData.permisos?.[m.key]?.editar === true}
-                            onChange={() => handlePermisoToggle(m.key, 'editar')}
-                          />
-                        }
-                        label="E"
-                        sx={{ m: 0 }}
-                      />
-                    </Tooltip>
-                    <Tooltip title="Eliminar">
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            size="small"
-                            checked={formData.permisos?.[m.key]?.eliminar === true}
-                            onChange={() => handlePermisoToggle(m.key, 'eliminar')}
-                          />
-                        }
-                        label="D"
-                        sx={{ m: 0 }}
-                      />
-                    </Tooltip>
+                    {m.permisos.includes('crear') && (
+                      <Tooltip title="Crear">
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              size="small"
+                              checked={formData.permisos?.[m.key]?.crear === true}
+                              onChange={() => handlePermisoToggle(m.key, 'crear')}
+                            />
+                          }
+                          label="C"
+                          sx={{ m: 0 }}
+                        />
+                      </Tooltip>
+                    )}
+                    {m.permisos.includes('ver') && (
+                      <Tooltip title="Ver">
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              size="small"
+                              checked={formData.permisos?.[m.key]?.ver === true}
+                              onChange={() => handlePermisoToggle(m.key, 'ver')}
+                            />
+                          }
+                          label="V"
+                          sx={{ m: 0 }}
+                        />
+                      </Tooltip>
+                    )}
+                    {m.permisos.includes('editar') && (
+                      <Tooltip title="Editar">
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              size="small"
+                              checked={formData.permisos?.[m.key]?.editar === true}
+                              onChange={() => handlePermisoToggle(m.key, 'editar')}
+                            />
+                          }
+                          label="E"
+                          sx={{ m: 0 }}
+                        />
+                      </Tooltip>
+                    )}
+                    {m.permisos.includes('eliminar') && (
+                      <Tooltip title="Eliminar">
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              size="small"
+                              checked={formData.permisos?.[m.key]?.eliminar === true}
+                              onChange={() => handlePermisoToggle(m.key, 'eliminar')}
+                            />
+                          }
+                          label="D"
+                          sx={{ m: 0 }}
+                        />
+                      </Tooltip>
+                    )}
                   </Box>
                 </Box>
               );

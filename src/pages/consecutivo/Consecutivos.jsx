@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaSearch, FaEye } from 'react-icons/fa';
 import api from '../../services/api';
 import { toast } from 'react-toastify';
+import usePermisos from '../../hooks/usePermisos';
 import {
   Box,
   Typography,
@@ -33,6 +34,7 @@ import {
 } from '@mui/material';
 
 const Consecutivos = () => {
+  const { puedeCrear, puedeEditar, puedeEliminar } = usePermisos();
   const [consecutivos, setConsecutivos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

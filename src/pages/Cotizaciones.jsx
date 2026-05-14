@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaPlus, FaExchangeAlt, FaEye, FaEdit, FaPrint } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import usePermisos from '../hooks/usePermisos';
 import {
   Box,
   Typography,
@@ -38,6 +39,7 @@ import {
 } from '../services/cotizacionService';
 
 const Cotizaciones = () => {
+  const { puedeCrear, puedeEditar } = usePermisos();
   const [cotizaciones, setCotizaciones] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [productos, setProductos] = useState([]);

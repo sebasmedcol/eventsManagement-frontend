@@ -44,24 +44,37 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
 
   const canSee = (perm) => {
     if (!perm) return true;
-    if (user.rol === 'admin' || user.rol === 'superadmin' || user.esAdminPrincipal) {
+    // Superadmin y admin principal siempre tienen acceso
+    if (user.rol === 'superadmin' || user.esAdminPrincipal) {
+      return true;
+    }
+    // Admin tiene acceso total a módulos de su empresa
+    if (user.rol === 'admin') {
       return true;
     }
     
-    // Primero verificar permisos desde rol_id (nuevo sistema de roles)
+    // Verificar permisos desde rol_id (nuevo sistema de roles)
     if (user.rol_id && user.rol_id.activo && user.rol_id.permisos) {
       const permisosRol = user.rol_id.permisos;
+      // Verificar si el permiso existe y tiene "ver" activo
       if (permisosRol?.[perm]?.ver === true) {
         return true;
       }
+      // Si no tiene el permiso de ver, no mostrar
+      return false;
     }
     
     // Fallback a permisos embebidos del usuario (legacy)
-    return user?.permisos?.[perm]?.ver === true;
+    if (user?.permisos?.[perm]?.ver === true) {
+      return true;
+    }
+    
+    // Por defecto, si no hay permisos configurados, no mostrar
+    return false;
   };
 
   const menuItems = [
-    { text: 'Dashboard', icon: <FaTachometerAlt />, path: '/dashboard' },
+    ...(canSee('dashboard') ? [{ text: 'Dashboard', icon: <FaTachometerAlt />, path: '/dashboard' }] : []),
     ...(canSee('clientes') ? [{ text: 'Clientes', icon: <FaUsers />, path: '/clientes' }] : []),
     ...(canSee('productos') ? [{ text: 'Productos', icon: <FaBoxOpen />, path: '/productos' }] : []),
     ...(canSee('ventas') ? [{ text: 'Ventas', icon: <FaShoppingCart />, path: '/ventas' }] : []),
@@ -72,23 +85,11 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
     ...(canSee('consecutivos') ? [{ text: 'Consecutivos', icon: <FaListOl />, path: '/consecutivos' }] : []),
     ...(canSee('cotizaciones') ? [{ text: 'Cotizaciones', icon: <FaListOl />, path: '/cotizaciones' }] : []),
     ...(canSee('disponibilidad') ? [{ text: 'Disponibilidad', icon: <FaCalendarAlt />, path: '/disponibilidad' }] : []),
-    { text: 'Configuración', icon: <FaCog />, path: '/configuraciones' },
-    ...(user.rol === 'admin' || user.rol === 'superadmin'
-      ? [
-          { text: 'Usuarios', icon: <FaUser />, path: '/usuarios' },
-          { text: 'Roles', icon: <FaUserTag />, path: '/roles' },
-        ]
-      : []),
-    ...(user.rol === 'superadmin'
-      ? [
-          {
-            text: 'Dashboard global',
-            icon: <FaTachometerAlt />,
-            path: '/superadmin/dashboard',
-          },
-          { text: 'Empresas', icon: <FaUsers />, path: '/superadmin/empresas' },
-        ]
-      : []),
+    ...(canSee('configuracion') ? [{ text: 'Configuracion', icon: <FaCog />, path: '/configuraciones' }] : []),
+    ...(canSee('usuarios') ? [{ text: 'Usuarios', icon: <FaUser />, path: '/usuarios' }] : []),
+    ...(canSee('roles') ? [{ text: 'Roles', icon: <FaUserTag />, path: '/roles' }] : []),
+    ...(canSee('dashboard_global') ? [{ text: 'Dashboard global', icon: <FaTachometerAlt />, path: '/superadmin/dashboard' }] : []),
+    ...(canSee('empresas') ? [{ text: 'Empresas', icon: <FaUsers />, path: '/superadmin/empresas' }] : []),
   ];
 
   const isSelected = (path) => {
