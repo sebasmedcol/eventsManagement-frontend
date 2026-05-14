@@ -275,11 +275,11 @@ const Navbar = ({ onToggleColorMode, mode, sidebarCollapsed, onToggleSidebarColl
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <img src="/logo.png" alt="IAN Logo" style={{ height: 32, width: 'auto', display: 'block' }} />
+              <img src="/logo.png" alt="Next Event Logo" style={{ height: 32, width: 'auto', display: 'block' }} />
             </Box>
 
             <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold' }}>
-              IAN Management
+              NExt Event
             </Typography>
           </Box>
 

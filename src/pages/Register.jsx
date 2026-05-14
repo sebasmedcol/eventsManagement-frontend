@@ -281,7 +281,7 @@ const Register = () => {
               <LockOutlinedIcon />
             </Avatar>
             <Typography component="h1" variant="h5" sx={{ mb: 1 }}>
-              IAN Management
+              NExt Event
             </Typography>
             <Typography component="h2" variant="h6" sx={{ mb: 3 }}>
               Crear empresa y usuario administrador

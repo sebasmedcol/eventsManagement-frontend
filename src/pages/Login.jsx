@@ -74,7 +74,7 @@ const Login = () => {
               <LockOutlinedIcon />
             </Avatar>
             <Typography component="h1" variant="h5" sx={{ mb: 1 }}>
-              IAN Management
+              NExt Event
             </Typography>
             <Typography component="h2" variant="h6" sx={{ mb: 3 }}>
               Iniciar Sesión
@@ -149,7 +149,7 @@ const Login = () => {
           </Box>
           
           <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 2 }}>
-            &copy; {new Date().getFullYear()} IAN Management. Todos los derechos reservados.
+            &copy; {new Date().getFullYear()} Next Event. Todos los derechos reservados.
           </Typography>
         </Paper>
       </Box>

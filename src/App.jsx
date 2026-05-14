@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider } from './context/AuthContext';
@@ -126,13 +126,28 @@ const getDesignTokens = (mode) => ({
     MuiDrawer: {
       styleOverrides: {
         paper: ({ theme }) => ({
-          backgroundColor: theme.palette.mode === 'dark' ? '#0f172a' : '#ffffff',
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(1, 62, 80, 0.3)' : '#ffffff',
           color: theme.palette.text.primary,
+          backdropFilter: theme.palette.mode === 'dark' ? 'blur(6px)' : 'none',
         }),
       },
     },
   },
 });
+
+const GlobalWatermark = () => {
+  const location = useLocation();
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  
+  return (
+    <img 
+      src={isAuthPage ? "/LogoFondoLogin.png" : "/logo.png"} 
+      alt="Marca de agua" 
+      className="global-watermark" 
+      style={isAuthPage ? { borderRadius: '24px' } : {}}
+    />
+  );
+};
 
 function App() {
   // Color mode with persistence
@@ -181,7 +196,7 @@ function App() {
               }}
             >
               {/* Marca de agua global detrás del contenido */}
-              <img src="/logo.png" alt="Marca de agua" className="global-watermark" />
+              <GlobalWatermark />
 
               <Container maxWidth={false} disableGutters sx={{ py: 2, px: 0 }} className="with-watermark-content">
                 <Routes>

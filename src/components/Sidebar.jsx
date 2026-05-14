@@ -96,7 +96,7 @@ const Sidebar = ({ open, onClose, width = 240 }) => {
     <Box sx={{ width, height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
-          IAN Management
+          NExt Event
         </Typography>
       </Box>
       <Divider />

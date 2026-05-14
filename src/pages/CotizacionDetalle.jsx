@@ -162,7 +162,7 @@ const CotizacionDetalle = () => {
               <Box sx={{ width: 96, flexShrink: 0 }}>
                 <img
                   src="/logo.png"
-                  alt="IAN Sonido Logo"
+                  alt="NExt Event Logo"
                   style={{ width: '96px', height: 'auto' }}
                 />
               </Box>
@@ -172,7 +172,7 @@ const CotizacionDetalle = () => {
                   component="h2"
                   sx={{ fontWeight: 'bold', mb: 1 }}
                 >
-                  IAN SONIDO
+                  NEXT EVENT
                 </Typography>
                 <Typography variant="h6" color="text.secondary">
                   Cotización
@@ -359,7 +359,7 @@ const CotizacionDetalle = () => {
               Los precios pueden cambiar de acuerdo al mercado.
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              IAN SONIDO - Teléfono: 3022798519
+              NEXT EVENT - Teléfono: 3022798519
             </Typography>
           </Box>
         </Box>
