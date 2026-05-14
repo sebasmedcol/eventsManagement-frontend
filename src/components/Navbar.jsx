@@ -273,12 +273,11 @@ const Navbar = ({ onToggleColorMode, mode, sidebarCollapsed, onToggleSidebarColl
             </Tooltip>
           )}
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 }, flexShrink: 0 }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <img src="/logo.png" alt="Next Event Logo" style={{ height: 32, width: 'auto', display: 'block' }} />
             </Box>
-
-            <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold' }}>
+            <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold', display: { xs: 'none', sm: 'block' } }}>
               NExt Event
             </Typography>
           </Box>
@@ -391,21 +390,35 @@ const Navbar = ({ onToggleColorMode, mode, sidebarCollapsed, onToggleSidebarColl
                 </MenuItem>
               </Menu>
 
-              <Button
-                color="error"
-                variant="contained"
-                onClick={handleLogout}
-                startIcon={
-                  loggingOut ? (
-                    <CircularProgress size={18} sx={{ color: 'inherit' }} />
-                  ) : (
-                    <FaSignOutAlt />
-                  )
-                }
-                disabled={loggingOut}
-              >
-                Salir
-              </Button>
+              {/* Botón Salir: texto en desktop, solo ícono en mobile */}
+              <Tooltip title="Salir">
+                <span>
+                  <Button
+                    color="error"
+                    variant="contained"
+                    onClick={handleLogout}
+                    startIcon={
+                      loggingOut ? (
+                        <CircularProgress size={18} sx={{ color: 'inherit' }} />
+                      ) : (
+                        <FaSignOutAlt />
+                      )
+                    }
+                    disabled={loggingOut}
+                    sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+                  >
+                    Salir
+                  </Button>
+                  <IconButton
+                    color="inherit"
+                    onClick={handleLogout}
+                    disabled={loggingOut}
+                    sx={{ display: { xs: 'inline-flex', sm: 'none' }, color: '#ff6b6b' }}
+                  >
+                    {loggingOut ? <CircularProgress size={18} sx={{ color: 'inherit' }} /> : <FaSignOutAlt />}
+                  </IconButton>
+                </span>
+              </Tooltip>
             </Box>
           )}
         </Toolbar>
