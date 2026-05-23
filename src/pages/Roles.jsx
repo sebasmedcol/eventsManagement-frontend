@@ -1,100 +1,108 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import {
-  FaPlus,
-  FaEdit,
-  FaTrash,
-  FaUserTag,
+  FaPlus, FaEdit, FaTrash, FaUserTag,
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import {
-  Box,
-  Typography,
-  Button,
-  Paper,
-  IconButton,
-  CircularProgress,
-  Container,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Switch,
-  FormControlLabel,
-  Tooltip,
-  Chip,
+  Box, Typography, Button, Paper, IconButton, CircularProgress,
+  Container, Table, TableBody, TableCell, TableContainer, TableHead,
+  TableRow, Dialog, DialogTitle, DialogContent, DialogActions,
+  TextField, Switch, FormControlLabel, Tooltip, Chip,
 } from '@mui/material';
 import Checkbox from '@mui/material/Checkbox';
 import AuthContext from '../context/AuthContext';
+import { usePlan } from '../context/planContext';
 import { getRoles, createRol, updateRol, deleteRol } from '../services/rolService';
 
-// Definimos permisos disponibles por módulo
-// 'full' = crear, ver, editar, eliminar
-// 'view_only' = solo ver
-// 'view_edit' = ver y editar
-const MODULOS_PERMISOS = [
-  { key: 'dashboard', label: 'Dashboard', permisos: ['ver'] },
-  { key: 'clientes', label: 'Clientes', permisos: ['crear', 'ver', 'editar', 'eliminar'] },
-  { key: 'productos', label: 'Productos', permisos: ['crear', 'ver', 'editar', 'eliminar'] },
-  { key: 'ventas', label: 'Ventas', permisos: ['crear', 'ver', 'editar', 'eliminar'] },
-  { key: 'eventos', label: 'Cronograma de eventos', permisos: ['crear', 'ver', 'editar', 'eliminar'] },
-  { key: 'consecutivos', label: 'Consecutivos', permisos: ['crear', 'ver', 'editar', 'eliminar'] },
-  { key: 'cotizaciones', label: 'Cotizaciones', permisos: ['crear', 'ver', 'editar', 'eliminar'] },
-  { key: 'disponibilidad', label: 'Disponibilidad', permisos: ['ver'] },
-  { key: 'configuracion', label: 'Configuracion', permisos: ['ver', 'editar'] },
-  { key: 'usuarios', label: 'Usuarios', permisos: ['crear', 'ver', 'editar', 'eliminar'] },
-  { key: 'roles', label: 'Roles', permisos: ['crear', 'ver', 'editar', 'eliminar'] },
-  { key: 'dashboard_global', label: 'Dashboard global', permisos: ['ver'] },
-  { key: 'empresas', label: 'Empresas', permisos: ['ver'] },
+/**
+ * Todos los módulos posibles en el sistema.
+ * - dashboard_global y empresas: solo para empresa SuperAdmin.
+ * - Los demás se filtran según el plan activo de la empresa.
+ */
+const TODOS_LOS_MODULOS = [
+  { key: 'dashboard',       label: 'Dashboard',              permisos: ['ver'],                              soloSuperAdmin: false },
+  { key: 'clientes',        label: 'Clientes',               permisos: ['crear', 'ver', 'editar', 'eliminar'], soloSuperAdmin: false },
+  { key: 'productos',       label: 'Productos',              permisos: ['crear', 'ver', 'editar', 'eliminar'], soloSuperAdmin: false },
+  { key: 'ventas',          label: 'Ventas',                 permisos: ['crear', 'ver', 'editar', 'eliminar'], soloSuperAdmin: false },
+  { key: 'eventos',         label: 'Cronograma de eventos',  permisos: ['crear', 'ver', 'editar', 'eliminar'], soloSuperAdmin: false },
+  { key: 'eventosPremium',  label: 'Eventos Premium',        permisos: ['crear', 'ver', 'editar', 'eliminar'], soloSuperAdmin: false, planModule: 'eventosPremium' },
+  { key: 'consecutivos',    label: 'Consecutivos',           permisos: ['crear', 'ver', 'editar', 'eliminar'], soloSuperAdmin: false },
+  { key: 'cotizaciones',    label: 'Cotizaciones',           permisos: ['crear', 'ver', 'editar', 'eliminar'], soloSuperAdmin: false },
+  { key: 'disponibilidad',  label: 'Disponibilidad',         permisos: ['ver'],                              soloSuperAdmin: false },
+  { key: 'configuracion',   label: 'Configuración',          permisos: ['ver', 'editar'],                    soloSuperAdmin: false, planModule: 'configuracion' },
+  { key: 'usuarios',        label: 'Usuarios',               permisos: ['crear', 'ver', 'editar', 'eliminar'], soloSuperAdmin: false },
+  { key: 'roles',           label: 'Roles',                  permisos: ['crear', 'ver', 'editar', 'eliminar'], soloSuperAdmin: false },
+  // ── Solo empresa SuperAdmin ─────────────────────────────────────────────
+  { key: 'dashboard_global', label: 'Dashboard Global',      permisos: ['ver'],                              soloSuperAdmin: true },
+  { key: 'empresas',         label: 'Empresas',              permisos: ['ver'],                              soloSuperAdmin: true },
 ];
 
-const buildPermisosDefault = () => {
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const buildPermisosDefault = (modulos) => {
   const base = {};
-  MODULOS_PERMISOS.forEach((m) => {
-    const permisoObj = {};
-    ['crear', 'ver', 'editar', 'eliminar'].forEach((accion) => {
-      permisoObj[accion] = false;
-    });
-    base[m.key] = permisoObj;
+  modulos.forEach((m) => {
+    base[m.key] = { crear: false, ver: false, editar: false, eliminar: false };
   });
   return base;
 };
 
-const normalizarPermisosUI = (input) => {
-  const base = buildPermisosDefault();
+const normalizarPermisosUI = (input, modulos) => {
+  const base = buildPermisosDefault(modulos);
   if (!input || typeof input !== 'object') return base;
-  MODULOS_PERMISOS.forEach((m) => {
+  modulos.forEach((m) => {
     const v = input[m.key];
     if (!v || typeof v !== 'object') return;
     base[m.key] = {
-      crear: v.crear === true,
-      ver: v.ver === true,
-      editar: v.editar === true,
+      crear:    v.crear    === true,
+      ver:      v.ver      === true,
+      editar:   v.editar   === true,
       eliminar: v.eliminar === true,
     };
   });
   return base;
 };
 
+// ─── Componente ──────────────────────────────────────────────────────────────
+
 const Roles = () => {
-  const { user } = useContext(AuthContext);
+  const { user }    = useContext(AuthContext);
+  const { canAccessModule, planInfo } = usePlan();
+
+  const isSuperAdmin = user?.rol === 'superadmin';
+
+  /**
+   * Filtra los módulos según el contexto:
+   * - SuperAdmin: ve todos.
+   * - Otras empresas: nunca ven dashboard_global ni empresas.
+   *   Además, los módulos bloqueados por plan se muestran deshabilitados.
+   */
+  const MODULOS_PERMISOS = TODOS_LOS_MODULOS.filter((m) => {
+    if (m.soloSuperAdmin) return isSuperAdmin;
+    return true;
+  });
+
+  /**
+   * Determina si un módulo está bloqueado por el plan actual.
+   * SuperAdmin nunca tiene módulos bloqueados.
+   */
+  const isModuloBlockedByPlan = (modulo) => {
+    if (isSuperAdmin) return false;
+    if (!modulo.planModule) return false; // sin restricción de plan definida
+    return !canAccessModule(modulo.planModule);
+  };
+
   const userRol = user?.rol;
-  const [roles, setRoles] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [roles,       setRoles]       = useState([]);
+  const [loading,     setLoading]     = useState(true);
   const hasLoadedRoles = useRef(false);
-  const [openModal, setOpenModal] = useState(false);
-  const [editingRol, setEditingRol] = useState(null);
-  const [formData, setFormData] = useState({
+  const [openModal,   setOpenModal]   = useState(false);
+  const [editingRol,  setEditingRol]  = useState(null);
+  const [formData,    setFormData]    = useState({
     nombre: '',
     descripcion: '',
     activo: true,
-    permisos: buildPermisosDefault(),
+    permisos: buildPermisosDefault(MODULOS_PERMISOS),
   });
 
   useEffect(() => {
@@ -125,26 +133,22 @@ const Roles = () => {
     if (rol) {
       setEditingRol(rol);
       setFormData({
-        nombre: rol.nombre,
+        nombre:      rol.nombre,
         descripcion: rol.descripcion || '',
-        activo: rol.activo,
-        permisos: normalizarPermisosUI(rol.permisos),
+        activo:      rol.activo,
+        permisos:    normalizarPermisosUI(rol.permisos, MODULOS_PERMISOS),
       });
     } else {
       setEditingRol(null);
       setFormData({
-        nombre: '',
-        descripcion: '',
-        activo: true,
-        permisos: buildPermisosDefault(),
+        nombre: '', descripcion: '', activo: true,
+        permisos: buildPermisosDefault(MODULOS_PERMISOS),
       });
     }
     setOpenModal(true);
   };
 
-  const handleCloseModal = () => {
-    setOpenModal(false);
-  };
+  const handleCloseModal = () => setOpenModal(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -161,73 +165,48 @@ const Roles = () => {
       permisos: {
         ...prev.permisos,
         [modulo]: {
-          ...(prev.permisos?.[modulo] || {
-            crear: false,
-            ver: false,
-            editar: false,
-            eliminar: false,
-          }),
+          ...(prev.permisos?.[modulo] || { crear: false, ver: false, editar: false, eliminar: false }),
           [accion]: !(prev.permisos?.[modulo]?.[accion] === true),
         },
       },
     }));
   };
 
-const handleToggleModuloCompleto = (modulo) => {
-    const moduloConfig = MODULOS_PERMISOS.find((m) => m.key === modulo);
+  const handleToggleModuloCompleto = (moduloKey) => {
+    const moduloConfig = MODULOS_PERMISOS.find((m) => m.key === moduloKey);
     if (!moduloConfig) return;
-    
-    const currentPermisos = formData.permisos[modulo] || {};
-    // Solo verificar las acciones disponibles para este módulo
-    const allActive = moduloConfig.permisos.every(
-      (accion) => currentPermisos[accion] === true
-    );
+
+    const currentPermisos = formData.permisos[moduloKey] || {};
+    const allActive = moduloConfig.permisos.every((accion) => currentPermisos[accion] === true);
 
     const newPermisos = { crear: false, ver: false, editar: false, eliminar: false };
-    moduloConfig.permisos.forEach((accion) => {
-      newPermisos[accion] = !allActive;
-    });
+    moduloConfig.permisos.forEach((accion) => { newPermisos[accion] = !allActive; });
 
     setFormData((prev) => ({
       ...prev,
-      permisos: {
-        ...prev.permisos,
-        [modulo]: newPermisos,
-      },
+      permisos: { ...prev.permisos, [moduloKey]: newPermisos },
     }));
   };
 
   const handleSubmit = async () => {
     try {
       const nombreTrim = formData.nombre.trim();
-      if (!nombreTrim) {
-        toast.error('El nombre del rol es obligatorio');
-        return;
-      }
-
-      if (nombreTrim.length > 50) {
-        toast.error('El nombre del rol no puede superar 50 caracteres');
-        return;
-      }
+      if (!nombreTrim) { toast.error('El nombre del rol es obligatorio'); return; }
+      if (nombreTrim.length > 50) { toast.error('El nombre del rol no puede superar 50 caracteres'); return; }
 
       const descripcionTrim = formData.descripcion.trim();
-      if (descripcionTrim.length > 200) {
-        toast.error('La descripcion no puede superar 200 caracteres');
-        return;
-      }
+      if (descripcionTrim.length > 200) { toast.error('La descripción no puede superar 200 caracteres'); return; }
 
       const payload = {
-        nombre: nombreTrim,
+        nombre:      nombreTrim,
         descripcion: descripcionTrim,
-        activo: formData.activo,
-        permisos: formData.permisos,
+        activo:      formData.activo,
+        permisos:    formData.permisos,
       };
 
       if (editingRol) {
         const actualizado = await updateRol(editingRol._id, payload);
-        setRoles((prev) =>
-          prev.map((r) => (r._id === actualizado._id ? actualizado : r))
-        );
+        setRoles((prev) => prev.map((r) => (r._id === actualizado._id ? actualizado : r)));
         toast.success('Rol actualizado');
       } else {
         const creado = await createRol(payload);
@@ -237,23 +216,19 @@ const handleToggleModuloCompleto = (modulo) => {
 
       setOpenModal(false);
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || 'Error al guardar el rol'
-      );
+      toast.error(error.response?.data?.message || 'Error al guardar el rol');
       console.error('Error al guardar rol:', error);
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('¿Seguro que desea eliminar este rol? Esta acción no se puede deshacer.')) return;
-
     try {
       await deleteRol(id);
       setRoles((prev) => prev.filter((r) => r._id !== id));
       toast.success('Rol eliminado');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error al eliminar el rol');
-      console.error('Error al eliminar rol:', error);
     }
   };
 
@@ -261,9 +236,7 @@ const handleToggleModuloCompleto = (modulo) => {
     return (
       <Container maxWidth="md">
         <Box sx={{ mt: 4 }}>
-          <Typography variant="h6">
-            Solo los administradores pueden gestionar roles.
-          </Typography>
+          <Typography variant="h6">Solo los administradores pueden gestionar roles.</Typography>
         </Box>
       </Container>
     );
@@ -275,11 +248,7 @@ const handleToggleModuloCompleto = (modulo) => {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h5">Roles</Typography>
           <Tooltip title="Crear un nuevo rol para esta empresa">
-            <Button
-              variant="contained"
-              startIcon={<FaPlus />}
-              onClick={() => handleOpenModal(null)}
-            >
+            <Button variant="contained" startIcon={<FaPlus />} onClick={() => handleOpenModal(null)}>
               Nuevo rol
             </Button>
           </Tooltip>
@@ -296,7 +265,7 @@ const handleToggleModuloCompleto = (modulo) => {
                 <TableHead>
                   <TableRow>
                     <TableCell>Nombre</TableCell>
-                    <TableCell>Descripcion</TableCell>
+                    <TableCell>Descripción</TableCell>
                     <TableCell>Estado</TableCell>
                     <TableCell>Tipo</TableCell>
                     <TableCell align="right">Acciones</TableCell>
@@ -307,8 +276,7 @@ const handleToggleModuloCompleto = (modulo) => {
                     <TableRow key={r._id}>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <FaUserTag />
-                          {r.nombre}
+                          <FaUserTag /> {r.nombre}
                         </Box>
                       </TableCell>
                       <TableCell>{r.descripcion || '-'}</TableCell>
@@ -321,36 +289,18 @@ const handleToggleModuloCompleto = (modulo) => {
                       </TableCell>
                       <TableCell>
                         {r.esPredeterminado && (
-                          <Chip
-                            label="Predeterminado"
-                            color="primary"
-                            size="small"
-                          />
+                          <Chip label="Predeterminado" color="primary" size="small" />
                         )}
                       </TableCell>
                       <TableCell align="right">
                         <Tooltip title="Editar rol y permisos">
-                          <IconButton
-                            color="primary"
-                            onClick={() => handleOpenModal(r)}
-                            sx={{ mr: 1 }}
-                          >
+                          <IconButton color="primary" onClick={() => handleOpenModal(r)} sx={{ mr: 1 }}>
                             <FaEdit />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip
-                          title={
-                            r.esPredeterminado
-                              ? 'No se puede eliminar un rol predeterminado'
-                              : 'Eliminar rol'
-                          }
-                        >
+                        <Tooltip title={r.esPredeterminado ? 'No se puede eliminar un rol predeterminado' : 'Eliminar rol'}>
                           <span>
-                            <IconButton
-                              color="error"
-                              onClick={() => handleDelete(r._id)}
-                              disabled={r.esPredeterminado}
-                            >
+                            <IconButton color="error" onClick={() => handleDelete(r._id)} disabled={r.esPredeterminado}>
                               <FaTrash />
                             </IconButton>
                           </span>
@@ -360,9 +310,7 @@ const handleToggleModuloCompleto = (modulo) => {
                   ))}
                   {roles.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} align="center">
-                        No hay roles registrados.
-                      </TableCell>
+                      <TableCell colSpan={5} align="center">No hay roles registrados.</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
@@ -372,163 +320,120 @@ const handleToggleModuloCompleto = (modulo) => {
         </Paper>
       </Box>
 
+      {/* ── Modal de creación / edición ────────────────────────────────── */}
       <Dialog open={openModal} onClose={handleCloseModal} fullWidth maxWidth="sm">
         <DialogTitle>{editingRol ? 'Editar rol' : 'Nuevo rol'}</DialogTitle>
         <DialogContent>
           <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="nombre"
-            label="Nombre del rol"
-            name="nombre"
-            value={formData.nombre}
-            onChange={handleChange}
-            variant="outlined"
-            inputProps={{ maxLength: 50 }}
+            margin="normal" required fullWidth
+            id="nombre" label="Nombre del rol" name="nombre"
+            value={formData.nombre} onChange={handleChange}
+            variant="outlined" inputProps={{ maxLength: 50 }}
           />
 
           <TextField
-            margin="normal"
-            fullWidth
-            name="descripcion"
-            label="Descripcion"
-            value={formData.descripcion}
-            onChange={handleChange}
-            variant="outlined"
-            multiline
-            rows={2}
+            margin="normal" fullWidth
+            name="descripcion" label="Descripción"
+            value={formData.descripcion} onChange={handleChange}
+            variant="outlined" multiline rows={2}
             inputProps={{ maxLength: 200 }}
           />
 
           <FormControlLabel
-            control={
-              <Switch
-                checked={formData.activo}
-                onChange={handleToggleActivo}
-                color="primary"
-              />
-            }
+            control={<Switch checked={formData.activo} onChange={handleToggleActivo} color="primary" />}
             label={formData.activo ? 'Activo' : 'Inactivo'}
             sx={{ mt: 1 }}
           />
 
           <Box sx={{ mt: 3 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              Permisos por modulo
-            </Typography>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>Permisos por módulo</Typography>
             <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
-              C = Crear, V = Ver, E = Editar, D = Eliminar. Haz clic en el nombre del modulo para activar/desactivar todos los permisos.
+              C = Crear · V = Ver · E = Editar · D = Eliminar. Haz clic en el nombre del módulo para activar/desactivar todos sus permisos.
             </Typography>
-{MODULOS_PERMISOS.map((m) => {
+
+            {MODULOS_PERMISOS.map((m) => {
               const moduloPermisos = formData.permisos[m.key] || {};
-              // Verificar si todas las acciones disponibles están activas
-              const allActive = m.permisos.every(
-                (accion) => moduloPermisos[accion] === true
-              );
+              const allActive      = m.permisos.every((accion) => moduloPermisos[accion] === true);
+              const blockedByPlan  = isModuloBlockedByPlan(m);
+
+              // Nombre del plan que bloquea este módulo (para el tooltip)
+              const blockTooltip = blockedByPlan
+                ? `Este módulo no está incluido en tu plan actual. Mejora tu plan para poder asignar permisos sobre él.`
+                : null;
+
               return (
-                <Box
+                <Tooltip
                   key={m.key}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 1,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 1,
-                    px: 1.5,
-                    py: 1,
-                    mb: 1,
-                  }}
+                  title={blockTooltip || ''}
+                  placement="left"
+                  disableHoverListener={!blockedByPlan}
                 >
-                  <Tooltip title="Clic para activar/desactivar todos los permisos de este modulo">
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        minWidth: 170,
-                        cursor: 'pointer',
-                        fontWeight: allActive ? 600 : 400,
-                        color: allActive ? 'primary.main' : 'text.primary',
-                        '&:hover': { textDecoration: 'underline' },
-                      }}
-                      onClick={() => handleToggleModuloCompleto(m.key)}
-                    >
-                      {m.label}
-                    </Typography>
-                  </Tooltip>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {m.permisos.includes('crear') && (
-                      <Tooltip title="Crear">
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              size="small"
-                              checked={formData.permisos?.[m.key]?.crear === true}
-                              onChange={() => handlePermisoToggle(m.key, 'crear')}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 1,
+                      border: '1px solid',
+                      borderColor: blockedByPlan ? 'grey.300' : 'divider',
+                      borderRadius: 1,
+                      px: 1.5,
+                      py: 1,
+                      mb: 1,
+                      bgcolor: blockedByPlan ? 'action.disabledBackground' : 'transparent',
+                      opacity: blockedByPlan ? 0.55 : 1,
+                    }}
+                  >
+                    {/* Nombre del módulo — clic para toggle (deshabilitado si bloqueado por plan) */}
+                    <Tooltip title={blockedByPlan ? '' : 'Clic para activar/desactivar todos los permisos de este módulo'}>
+                      <Typography
+                        variant="body2"
+                        onClick={() => !blockedByPlan && handleToggleModuloCompleto(m.key)}
+                        sx={{
+                          minWidth: 170,
+                          cursor: blockedByPlan ? 'not-allowed' : 'pointer',
+                          fontWeight: allActive && !blockedByPlan ? 600 : 400,
+                          color: blockedByPlan ? 'text.disabled' : allActive ? 'primary.main' : 'text.primary',
+                          '&:hover': !blockedByPlan ? { textDecoration: 'underline' } : {},
+                        }}
+                      >
+                        {m.label}
+                      </Typography>
+                    </Tooltip>
+
+                    {/* Checkboxes de permisos */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {['crear', 'ver', 'editar', 'eliminar'].map((accion) => {
+                        if (!m.permisos.includes(accion)) return null;
+                        const label = { crear: 'C', ver: 'V', editar: 'E', eliminar: 'D' }[accion];
+                        const title = { crear: 'Crear', ver: 'Ver', editar: 'Editar', eliminar: 'Eliminar' }[accion];
+                        return (
+                          <Tooltip title={blockedByPlan ? `No disponible en tu plan` : title} key={accion}>
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  size="small"
+                                  checked={formData.permisos?.[m.key]?.[accion] === true}
+                                  onChange={() => handlePermisoToggle(m.key, accion)}
+                                  disabled={blockedByPlan}
+                                />
+                              }
+                              label={label}
+                              sx={{ m: 0 }}
                             />
-                          }
-                          label="C"
-                          sx={{ m: 0 }}
-                        />
-                      </Tooltip>
-                    )}
-                    {m.permisos.includes('ver') && (
-                      <Tooltip title="Ver">
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              size="small"
-                              checked={formData.permisos?.[m.key]?.ver === true}
-                              onChange={() => handlePermisoToggle(m.key, 'ver')}
-                            />
-                          }
-                          label="V"
-                          sx={{ m: 0 }}
-                        />
-                      </Tooltip>
-                    )}
-                    {m.permisos.includes('editar') && (
-                      <Tooltip title="Editar">
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              size="small"
-                              checked={formData.permisos?.[m.key]?.editar === true}
-                              onChange={() => handlePermisoToggle(m.key, 'editar')}
-                            />
-                          }
-                          label="E"
-                          sx={{ m: 0 }}
-                        />
-                      </Tooltip>
-                    )}
-                    {m.permisos.includes('eliminar') && (
-                      <Tooltip title="Eliminar">
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              size="small"
-                              checked={formData.permisos?.[m.key]?.eliminar === true}
-                              onChange={() => handlePermisoToggle(m.key, 'eliminar')}
-                            />
-                          }
-                          label="D"
-                          sx={{ m: 0 }}
-                        />
-                      </Tooltip>
-                    )}
+                          </Tooltip>
+                        );
+                      })}
+                    </Box>
                   </Box>
-                </Box>
+                </Tooltip>
               );
             })}
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseModal}>Cancelar</Button>
-          <Button onClick={handleSubmit} variant="contained">
-            Guardar
-          </Button>
+          <Button onClick={handleSubmit} variant="contained">Guardar</Button>
         </DialogActions>
       </Dialog>
     </Container>

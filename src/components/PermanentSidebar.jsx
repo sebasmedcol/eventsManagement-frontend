@@ -1,24 +1,19 @@
 import { cloneElement, isValidElement, useContext } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
-import { FaUser, FaUsers, FaBoxOpen, FaShoppingCart, FaListOl, FaTachometerAlt, FaCalendarAlt, FaUserTag, FaCog, FaCrown, FaFileInvoice } from 'react-icons/fa';
-import AuthContext from '../context/AuthContext';
-import { usePlan } from '../context/PlanContext';
 import {
-  Box,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Drawer,
-  Tooltip,
-  styled,
-  Chip,
-  Typography,
-  Divider,
+  FaUser, FaUsers, FaBoxOpen, FaShoppingCart, FaListOl,
+  FaTachometerAlt, FaCalendarAlt, FaUserTag, FaCog, FaCrown, FaFileInvoice,
+} from 'react-icons/fa';
+import AuthContext from '../context/AuthContext';
+import { usePlan } from '../context/planContext';
+import {
+  Box, List, ListItem, ListItemIcon, ListItemText,
+  Drawer, Tooltip, styled, Chip, Typography, Divider,
 } from '@mui/material';
 import { Lock as LockIcon } from '@mui/icons-material';
 
-// Estilo para el elemento de menu seleccionado
+// ─── Estilos ─────────────────────────────────────────────────────────────────
+
 const StyledListItem = styled(ListItem)(({ theme, selected, disabled }) => ({
   borderRadius: '8px',
   margin: '4px 8px',
@@ -29,9 +24,7 @@ const StyledListItem = styled(ListItem)(({ theme, selected, disabled }) => ({
   ...(selected && {
     backgroundColor: theme.palette.action.selected,
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-    '&:hover': {
-      backgroundColor: theme.palette.action.selected,
-    },
+    '&:hover': { backgroundColor: theme.palette.action.selected },
   }),
   ...(disabled && {
     opacity: 0.5,
@@ -40,199 +33,153 @@ const StyledListItem = styled(ListItem)(({ theme, selected, disabled }) => ({
   }),
 }));
 
+// ─── Componente ──────────────────────────────────────────────────────────────
+
 const PermanentSidebar = ({ width = 240, collapsed = false }) => {
   const { user } = useContext(AuthContext);
   const location = useLocation();
-  const { canAccessModule, currentPlan, checkLimit, isTrialExpired } = usePlan();
+  const { canAccessModule, currentPlan, isTrialExpired, planInfo } = usePlan();
 
-  // Si no hay usuario autenticado o estamos en la pagina de login, no mostrar el sidebar
   if (!user || location.pathname === '/login') return null;
 
   const currentWidth = collapsed ? 72 : width;
-  const planEmpresa =
-    user?.empresa && typeof user.empresa === 'object' ? user.empresa.plan : '';
-  const hasPremium = user?.rol === 'superadmin' || ['premium', 'super', 'pro'].includes(planEmpresa);
 
+  /**
+   * La empresa es SuperAdmin cuando el usuario tiene rol 'superadmin'.
+   * Esos usuarios tienen acceso total y ven módulos exclusivos.
+   */
+  const isSuperAdmin = user?.rol === 'superadmin';
+
+  // ── Verificación de permiso de rol (visible o no en sidebar) ─────────────
+  // Bloqueado por ROL → NO aparece en sidebar en absoluto.
+  // Bloqueado por PLAN → aparece en gris con tooltip.
   const canSee = (perm) => {
     if (!perm) return true;
-    // Superadmin y admin principal siempre tienen acceso
-    if (user.rol === 'superadmin' || user.esAdminPrincipal) {
-      return true;
+
+    // SuperAdmin y admin principal siempre pueden ver todo
+    if (isSuperAdmin || user.esAdminPrincipal) return true;
+
+    // Admin tiene acceso completo a módulos de su empresa
+    if (user.rol === 'admin') return true;
+
+    // Sistema de roles RBAC (rol_id con permisos)
+    if (user.rol_id?.activo && user.rol_id?.permisos) {
+      return user.rol_id.permisos?.[perm]?.ver === true;
     }
-    // Admin tiene acceso total a modulos de su empresa
-    if (user.rol === 'admin') {
-      return true;
-    }
-    
-    // Verificar permisos desde rol_id (nuevo sistema de roles)
-    if (user.rol_id && user.rol_id.activo && user.rol_id.permisos) {
-      const permisosRol = user.rol_id.permisos;
-      // Verificar si el permiso existe y tiene "ver" activo
-      if (permisosRol?.[perm]?.ver === true) {
-        return true;
-      }
-      // Si no tiene el permiso de ver, no mostrar
-      return false;
-    }
-    
-    // Fallback a permisos embebidos del usuario (legacy)
-    if (user?.permisos?.[perm]?.ver === true) {
-      return true;
-    }
-    
-    // Por defecto, si no hay permisos configurados, no mostrar
+
+    // Legacy: permisos embebidos en el usuario
+    if (user?.permisos?.[perm]?.ver === true) return true;
+
     return false;
   };
 
-  // Verificar si un modulo esta disponible en el plan actual
-  const isModuleAvailable = (moduleName) => {
-    // Si el trial expiro, bloquear la creacion pero permitir ver
-    // Superadmin siempre tiene acceso
-    if (user.rol === 'superadmin') return true;
+  // ── Verificación de acceso por plan ──────────────────────────────────────
+  // SuperAdmin siempre tiene acceso a todos los módulos.
+  const isModuleAvailableByPlan = (moduleName) => {
+    if (isSuperAdmin) return true;
     return canAccessModule(moduleName);
   };
 
-  // Construir items del menu con verificacion de plan
+  // ── Construcción del menú ─────────────────────────────────────────────────
   const buildMenuItems = () => {
     const items = [];
 
-    // Dashboard - siempre disponible
+    // Dashboard — siempre disponible
     if (canSee('dashboard')) {
-      items.push({ 
-        text: 'Dashboard', 
-        icon: <FaTachometerAlt />, 
-        path: '/dashboard',
-        module: 'dashboard',
-      });
+      items.push({ text: 'Dashboard', icon: <FaTachometerAlt />, path: '/dashboard', module: 'dashboard' });
     }
 
     // Clientes
     if (canSee('clientes')) {
-      items.push({ 
-        text: 'Clientes', 
-        icon: <FaUsers />, 
-        path: '/clientes',
-        module: 'clientes',
-      });
+      items.push({ text: 'Clientes', icon: <FaUsers />, path: '/clientes', module: 'clientes' });
     }
 
     // Productos
     if (canSee('productos')) {
-      items.push({ 
-        text: 'Productos', 
-        icon: <FaBoxOpen />, 
-        path: '/productos',
-        module: 'productos',
-      });
+      items.push({ text: 'Productos', icon: <FaBoxOpen />, path: '/productos', module: 'productos' });
     }
 
     // Ventas
     if (canSee('ventas')) {
-      items.push({ 
-        text: 'Ventas', 
-        icon: <FaShoppingCart />, 
-        path: '/ventas',
-        module: 'ventas',
-      });
+      items.push({ text: 'Ventas', icon: <FaShoppingCart />, path: '/ventas', module: 'ventas' });
     }
 
-    // Eventos (Cronograma)
+    // Cronograma de eventos (básico)
     if (canSee('eventos')) {
-      items.push({ 
-        text: 'Cronograma', 
-        icon: <FaCalendarAlt />, 
-        path: '/eventos',
-        module: 'eventos',
-      });
+      items.push({ text: 'Cronograma', icon: <FaCalendarAlt />, path: '/eventos', module: 'eventos' });
     }
 
-    // Eventos Premium - solo planes pro/premium
-    if (canSee('eventos') && isModuleAvailable('eventosPremium')) {
-      items.push({ 
-        text: 'Eventos Premium', 
-        icon: <FaCrown />, 
+    // Eventos Premium — se muestra siempre que el usuario tenga permiso de rol;
+    // si el plan no lo incluye, aparece en gris con candado y tooltip.
+    if (canSee('eventos')) {
+      items.push({
+        text: 'Eventos Premium',
+        icon: <FaCrown />,
         path: '/eventos-premium',
         module: 'eventosPremium',
-        requiresPlan: ['pro', 'premium'],
+        planTooltip: 'Eventos Premium requiere un plan Pro o superior.',
       });
     }
 
     // Consecutivos
     if (canSee('consecutivos')) {
-      items.push({ 
-        text: 'Consecutivos', 
-        icon: <FaListOl />, 
-        path: '/consecutivos',
-        module: 'facturacion',
-      });
+      items.push({ text: 'Consecutivos', icon: <FaListOl />, path: '/consecutivos', module: 'facturacion' });
     }
 
     // Cotizaciones
     if (canSee('cotizaciones')) {
-      items.push({ 
-        text: 'Cotizaciones', 
-        icon: <FaFileInvoice />, 
-        path: '/cotizaciones',
-        module: 'cotizaciones',
-      });
+      items.push({ text: 'Cotizaciones', icon: <FaFileInvoice />, path: '/cotizaciones', module: 'cotizaciones' });
     }
 
     // Disponibilidad
     if (canSee('disponibilidad')) {
-      items.push({ 
-        text: 'Disponibilidad', 
-        icon: <FaCalendarAlt />, 
-        path: '/disponibilidad',
-        module: 'eventos',
-      });
+      items.push({ text: 'Disponibilidad', icon: <FaCalendarAlt />, path: '/disponibilidad', module: 'eventos' });
     }
 
-    // Configuracion
+    // Configuración — se muestra siempre que el usuario tenga permiso de rol;
+    // si el plan no lo incluye (ej. básico), aparece en gris con candado.
     if (canSee('configuracion')) {
-      items.push({ 
-        text: 'Configuracion', 
-        icon: <FaCog />, 
+      items.push({
+        text: 'Configuración',
+        icon: <FaCog />,
         path: '/configuraciones',
         module: 'configuracion',
+        planTooltip: 'Configuración no está disponible en el plan Básico. Mejora tu plan para acceder.',
       });
     }
 
     // Usuarios
     if (canSee('usuarios')) {
-      items.push({ 
-        text: 'Usuarios', 
-        icon: <FaUser />, 
-        path: '/usuarios',
-        module: 'usuarios',
-      });
+      items.push({ text: 'Usuarios', icon: <FaUser />, path: '/usuarios', module: 'usuarios' });
     }
 
-    // Roles - solo planes pro/premium
-    if (canSee('roles') && isModuleAvailable('roles')) {
-      items.push({ 
-        text: 'Roles', 
-        icon: <FaUserTag />, 
+    // Roles — se muestra siempre que el usuario tenga permiso de rol;
+    // si el plan no lo incluye, aparece en gris con candado.
+    if (canSee('roles')) {
+      items.push({
+        text: 'Roles',
+        icon: <FaUserTag />,
         path: '/roles',
         module: 'roles',
-        requiresPlan: ['pro', 'premium'],
+        planTooltip: 'Roles y Permisos requiere un plan Pro o superior.',
       });
     }
 
-    // Dashboard global (superadmin)
-    if (canSee('dashboard_global')) {
-      items.push({ 
-        text: 'Dashboard global', 
-        icon: <FaTachometerAlt />, 
+    // ── Módulos exclusivos de SuperAdmin ─────────────────────────────────
+    // Nunca aparecen para otras empresas, ni en gris.
+    if (isSuperAdmin && canSee('dashboard_global')) {
+      items.push({
+        text: 'Dashboard Global',
+        icon: <FaTachometerAlt />,
         path: '/superadmin/dashboard',
-        module: 'dashboard',
+        module: 'dashboard_global',
       });
     }
 
-    // Empresas (superadmin)
-    if (canSee('empresas')) {
-      items.push({ 
-        text: 'Empresas', 
-        icon: <FaUsers />, 
+    if (isSuperAdmin && canSee('empresas')) {
+      items.push({
+        text: 'Empresas',
+        icon: <FaUsers />,
         path: '/superadmin/empresas',
         module: 'empresas',
       });
@@ -243,23 +190,22 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
 
   const menuItems = buildMenuItems();
 
-  const isSelected = (path) => {
-    return location.pathname === path || location.pathname.startsWith(`${path}/`);
-  };
+  const isSelected = (path) =>
+    location.pathname === path || location.pathname.startsWith(`${path}/`);
 
-  const renderIcon = (icon) => {
-    if (isValidElement(icon)) {
-      return cloneElement(icon, { size: 20 });
-    }
-    return icon;
-  };
+  const renderIcon = (icon) =>
+    isValidElement(icon) ? cloneElement(icon, { size: 20 }) : icon;
 
-  // Obtener tooltip para items bloqueados
-  const getTooltip = (item) => {
-    if (!isModuleAvailable(item.module)) {
-      return `Este modulo no esta disponible en tu plan actual. Mejora a ${item.requiresPlan?.join(' o ') || 'un plan superior'} para acceder.`;
+  // Tooltip: collapsed → nombre del ítem; bloqueado por plan → mensaje de upgrade
+  const getTooltipText = (item) => {
+    const available = isModuleAvailableByPlan(item.module);
+    if (collapsed) {
+      return available ? item.text : `${item.text} — ${item.planTooltip || 'No disponible en tu plan actual.'}`;
     }
-    return item.text;
+    if (!available) {
+      return item.planTooltip || 'Este módulo no está disponible en tu plan actual.';
+    }
+    return '';
   };
 
   return (
@@ -284,16 +230,22 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
       open
     >
       <Box sx={{ width: currentWidth, height: '100%', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
+
         {/* Badge del plan actual */}
         {!collapsed && currentPlan && (
           <Box sx={{ p: 2, textAlign: 'center', borderBottom: 1, borderColor: 'divider' }}>
             <Chip
-              label={`Plan ${currentPlan.nombre}`}
-              color={currentPlan.id === 'premium' ? 'success' : currentPlan.id === 'pro' ? 'primary' : 'default'}
+              label={isSuperAdmin ? 'SuperAdmin' : `Plan ${currentPlan.nombre}`}
+              color={
+                isSuperAdmin ? 'error'
+                : currentPlan.id === 'premium' ? 'success'
+                : currentPlan.id === 'pro' ? 'primary'
+                : 'default'
+              }
               size="small"
               sx={{ fontWeight: 'bold' }}
             />
-            {isTrialExpired() && (
+            {!isSuperAdmin && isTrialExpired() && (
               <Typography variant="caption" display="block" color="error" sx={{ mt: 0.5 }}>
                 Trial expirado
               </Typography>
@@ -301,10 +253,11 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
           </Box>
         )}
 
+        {/* Ítems del menú */}
         <List sx={{ flexGrow: 1, py: 1, overflowX: 'hidden', overflowY: 'auto' }}>
           {menuItems.map((item) => {
-            const moduleAvailable = isModuleAvailable(item.module);
-            const tooltipText = collapsed ? item.text : (moduleAvailable ? '' : getTooltip(item));
+            const moduleAvailable = isModuleAvailableByPlan(item.module);
+            const tooltipText     = getTooltipText(item);
 
             const content = (
               <StyledListItem
@@ -330,24 +283,16 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
                     justifyContent: 'center',
                     alignItems: 'center',
                     color: moduleAvailable ? 'text.primary' : 'text.disabled',
-                    '& svg': {
-                      width: 20,
-                      height: 20,
-                      display: 'block',
-                      color: 'inherit',
-                      flexShrink: 0,
-                    },
+                    '& svg': { width: 20, height: 20, display: 'block', color: 'inherit', flexShrink: 0 },
                   }}
                 >
                   {renderIcon(item.icon)}
                 </ListItemIcon>
                 {!collapsed && (
                   <>
-                    <ListItemText 
-                      primary={item.text} 
-                      primaryTypographyProps={{
-                        color: moduleAvailable ? 'text.primary' : 'text.disabled',
-                      }}
+                    <ListItemText
+                      primary={item.text}
+                      primaryTypographyProps={{ color: moduleAvailable ? 'text.primary' : 'text.disabled' }}
                     />
                     {!moduleAvailable && (
                       <LockIcon fontSize="small" sx={{ color: 'grey.400', ml: 1 }} />
@@ -357,20 +302,16 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
               </StyledListItem>
             );
 
-            if (tooltipText) {
-              return (
-                <Tooltip title={tooltipText} placement="right" key={item.text}>
-                  <span>{content}</span>
-                </Tooltip>
-              );
-            }
-
-            return content;
+            return tooltipText ? (
+              <Tooltip title={tooltipText} placement="right" key={item.text}>
+                <span>{content}</span>
+              </Tooltip>
+            ) : content;
           })}
         </List>
 
-        {/* Link a planes */}
-        {!collapsed && (
+        {/* Botón "Ver Planes" — solo para el admin principal y no para SuperAdmin */}
+        {!collapsed && !isSuperAdmin && user?.esAdminPrincipal && (
           <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
             <StyledListItem
               button
@@ -379,18 +320,13 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
               sx={{
                 bgcolor: 'primary.main',
                 color: 'white',
-                '&:hover': {
-                  bgcolor: 'primary.dark',
-                },
+                '&:hover': { bgcolor: 'primary.dark' },
               }}
             >
               <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
                 <FaCrown size={20} />
               </ListItemIcon>
-              <ListItemText 
-                primary="Ver Planes" 
-                primaryTypographyProps={{ fontWeight: 'bold' }}
-              />
+              <ListItemText primary="Ver Planes" primaryTypographyProps={{ fontWeight: 'bold' }} />
             </StyledListItem>
           </Box>
         )}
