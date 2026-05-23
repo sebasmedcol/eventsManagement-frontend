@@ -1,22 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import api from '../services/api';
+import { usePlan } from '../context/PlanContext';
 import {
   Box,
   Typography,
+  Container,
+  Grid,
   Card,
   CardContent,
+  CardHeader,
   CardActions,
   Button,
-  Grid,
   Chip,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
-  Divider,
-  Paper,
-  Container,
   CircularProgress,
+  Divider,
   Alert,
+  Paper,
   Tab,
   Tabs,
   useTheme,
@@ -28,278 +32,331 @@ import {
   Star as StarIcon,
   Rocket as RocketIcon,
   Business as BusinessIcon,
-  Storefront as StorefrontIcon,
+  LocalOffer as OfferIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
-import { usePlan } from '../context/PlanContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-/**
- * Página de comparación de planes
- */
 const Planes = () => {
   const theme = useTheme();
-  const { currentPlan, refreshPlanInfo } = usePlan();
-  const [plans, setPlans] = useState([]);
+  const { currentPlan, refreshPlanInfo, isTrialExpired, getTrialDaysRemaining, trialInfo } = usePlan();
+  const [planes, setPlanes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedTab, setSelectedTab] = useState(0);
-  
-  // Iconos para cada plan
-  const planIcons = {
-    free_trial: StorefrontIcon,
-    basico: StorefrontIcon,
-    pro: BusinessIcon,
-    premium: RocketIcon,
-  };
-  
-  // Colores para cada plan
-  const planColors = {
-    free_trial: 'grey',
-    basico: 'info',
-    pro: 'primary',
-    premium: 'success',
-  };
-  
+  const [activeTab, setActiveTab] = useState(0);
+
   useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem('token');
-        const response = await axios.get(`${API_URL}/config/plans`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        
-        if (response.data.success) {
-          setPlans(response.data.data);
-        }
-      } catch (err) {
-        console.error('Error al cargar planes:', err);
-        setError(err.response?.data?.message || 'Error al cargar planes');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchPlans();
+    fetchPlanes();
   }, []);
-  
+
+  const fetchPlanes = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/config/plans');
+      if (response.data.success) {
+        setPlanes(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error al cargar planes:', error);
+      toast.error('Error al cargar los planes disponibles');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPlanIcon = (planId) => {
+    switch (planId) {
+      case 'premium':
+        return <StarIcon sx={{ fontSize: 40, color: '#FFD700' }} />;
+      case 'pro':
+        return <RocketIcon sx={{ fontSize: 40, color: theme.palette.primary.main }} />;
+      case 'basico':
+        return <BusinessIcon sx={{ fontSize: 40, color: theme.palette.info.main }} />;
+      default:
+        return <OfferIcon sx={{ fontSize: 40, color: theme.palette.success.main }} />;
+    }
+  };
+
+  const getPlanColor = (planId) => {
+    switch (planId) {
+      case 'premium':
+        return { main: '#FFD700', light: '#FFF8DC' };
+      case 'pro':
+        return { main: theme.palette.primary.main, light: alpha(theme.palette.primary.main, 0.1) };
+      case 'basico':
+        return { main: theme.palette.info.main, light: alpha(theme.palette.info.main, 0.1) };
+      default:
+        return { main: theme.palette.success.main, light: alpha(theme.palette.success.main, 0.1) };
+    }
+  };
+
+  const formatLimit = (value) => {
+    if (value === -1) return 'Ilimitado';
+    return value.toLocaleString();
+  };
+
   const handleSelectPlan = (planId) => {
-    // Aquí implementar la lógica de selección de plan
-    // Por ejemplo, redirigir a página de pago o contacto
-    console.log('Plan seleccionado:', planId);
+    // Aqui iria la logica para seleccionar/comprar un plan
+    // Por ahora solo mostramos un mensaje
+    toast.info(`Para contratar el plan ${planId}, contacta a nuestro equipo de ventas.`);
   };
-  
-  const formatPrice = (price) => {
-    if (!price || price === 0) return 'Gratis';
-    return `$${price}/mes`;
-  };
-  
-  const formatLimit = (limit) => {
-    if (limit === -1) return 'Ilimitado';
-    return limit.toLocaleString();
-  };
-  
+
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-        <CircularProgress />
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress size={60} />
       </Box>
     );
   }
-  
-  if (error) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="error">{error}</Alert>
-      </Container>
-    );
-  }
-  
+
+  const orderedPlans = ['free_trial', 'basico', 'pro', 'premium'];
+  const sortedPlanes = planes.sort((a, b) => orderedPlans.indexOf(a.id) - orderedPlans.indexOf(b.id));
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header */}
       <Box sx={{ textAlign: 'center', mb: 6 }}>
-        <Typography variant="h3" fontWeight="bold" gutterBottom>
-          Elige el plan perfecto para tu negocio
+        <Typography variant="h3" component="h1" sx={{ fontWeight: 'bold', mb: 2 }}>
+          Planes y Precios
         </Typography>
         <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto' }}>
-          Todos los planes incluyen acceso a las funcionalidades esenciales. 
-          Elige el que mejor se adapte a tus necesidades.
+          Elige el plan que mejor se adapte a las necesidades de tu negocio
         </Typography>
       </Box>
-      
-      {/* Tabs para filtrar */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-        <Tabs 
-          value={selectedTab} 
-          onChange={(e, v) => setSelectedTab(v)}
-          sx={{
-            '& .MuiTab-root': {
-              textTransform: 'none',
-              fontWeight: 600,
-            },
-          }}
-        >
-          <Tab label="Todos los planes" />
-          <Tab label="Comparar características" />
+
+      {/* Alerta de trial */}
+      {trialInfo && (
+        <Box sx={{ mb: 4 }}>
+          {isTrialExpired() ? (
+            <Alert severity="error" sx={{ justifyContent: 'center' }}>
+              Tu periodo de prueba ha expirado. Selecciona un plan para continuar usando NextEvents.
+            </Alert>
+          ) : (
+            <Alert severity="info" sx={{ justifyContent: 'center' }}>
+              Te quedan <strong>{getTrialDaysRemaining()} dias</strong> de prueba gratuita. 
+              Aprovecha para explorar todas las funcionalidades.
+            </Alert>
+          )}
+        </Box>
+      )}
+
+      {/* Plan actual */}
+      {currentPlan && (
+        <Box sx={{ mb: 4, textAlign: 'center' }}>
+          <Chip
+            label={`Tu plan actual: ${currentPlan.nombre}`}
+            color="primary"
+            size="large"
+            sx={{ fontSize: '1rem', py: 2, px: 2 }}
+          />
+        </Box>
+      )}
+
+      {/* Tabs para cambiar vista */}
+      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
+        <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)}>
+          <Tab label="Vista de Tarjetas" />
+          <Tab label="Comparacion Detallada" />
         </Tabs>
       </Box>
-      
-      {selectedTab === 0 ? (
-        /* Vista de cards de planes */
+
+      {/* Vista de tarjetas */}
+      {activeTab === 0 && (
         <Grid container spacing={3} justifyContent="center">
-          {plans.filter(p => p.id !== 'free_trial').map((plan) => {
-            const PlanIcon = planIcons[plan.id] || StorefrontIcon;
+          {sortedPlanes.map((plan) => {
+            const colors = getPlanColor(plan.id);
             const isCurrentPlan = currentPlan?.id === plan.id;
-            const isPro = plan.id === 'pro';
-            
+            const isPremium = plan.id === 'premium';
+
             return (
-              <Grid item xs={12} sm={6} md={4} key={plan.id}>
+              <Grid item xs={12} sm={6} md={3} key={plan.id}>
                 <Card
                   sx={{
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
                     position: 'relative',
-                    border: isPro ? 2 : 1,
-                    borderColor: isPro ? 'primary.main' : 'divider',
-                    transform: isPro ? 'scale(1.02)' : 'none',
-                    boxShadow: isPro ? 8 : 1,
-                    transition: 'all 0.2s ease-in-out',
+                    border: isCurrentPlan ? `3px solid ${colors.main}` : '1px solid',
+                    borderColor: isCurrentPlan ? colors.main : 'divider',
+                    transform: isPremium ? 'scale(1.05)' : 'none',
+                    zIndex: isPremium ? 1 : 0,
+                    transition: 'transform 0.2s, box-shadow 0.2s',
                     '&:hover': {
-                      transform: isPro ? 'scale(1.04)' : 'scale(1.02)',
-                      boxShadow: 6,
+                      transform: isPremium ? 'scale(1.08)' : 'scale(1.02)',
+                      boxShadow: theme.shadows[10],
                     },
                   }}
                 >
                   {/* Badge de popular */}
-                  {isPro && (
-                    <Chip
-                      label="Más popular"
-                      color="primary"
-                      size="small"
-                      icon={<StarIcon />}
+                  {isPremium && (
+                    <Box
                       sx={{
                         position: 'absolute',
                         top: -12,
                         left: '50%',
                         transform: 'translateX(-50%)',
+                        bgcolor: colors.main,
+                        color: 'black',
+                        px: 2,
+                        py: 0.5,
+                        borderRadius: 2,
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
                       }}
-                    />
+                    >
+                      MAS POPULAR
+                    </Box>
                   )}
-                  
+
                   {/* Badge de plan actual */}
                   {isCurrentPlan && (
-                    <Chip
-                      label="Tu plan actual"
-                      color="success"
-                      size="small"
+                    <Box
                       sx={{
                         position: 'absolute',
-                        top: 16,
-                        right: 16,
+                        top: isPremium ? 20 : -12,
+                        right: 10,
+                        bgcolor: 'success.main',
+                        color: 'white',
+                        px: 1.5,
+                        py: 0.3,
+                        borderRadius: 1,
+                        fontSize: '0.7rem',
+                        fontWeight: 'bold',
                       }}
-                    />
-                  )}
-                  
-                  <CardContent sx={{ flex: 1, pt: isPro ? 4 : 3 }}>
-                    <Box sx={{ textAlign: 'center', mb: 3 }}>
-                      <Box
-                        sx={{
-                          width: 60,
-                          height: 60,
-                          borderRadius: '50%',
-                          bgcolor: alpha(theme.palette[planColors[plan.id]]?.main || theme.palette.grey[500], 0.1),
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          mx: 'auto',
-                          mb: 2,
-                        }}
-                      >
-                        <PlanIcon sx={{ fontSize: 30, color: `${planColors[plan.id]}.main` }} />
-                      </Box>
-                      <Typography variant="h5" fontWeight="bold" gutterBottom>
-                        {plan.nombre}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ minHeight: 40 }}>
-                        {plan.descripcion}
-                      </Typography>
+                    >
+                      ACTUAL
                     </Box>
-                    
+                  )}
+
+                  <CardHeader
+                    sx={{
+                      bgcolor: colors.light,
+                      textAlign: 'center',
+                      pt: isPremium ? 4 : 3,
+                    }}
+                    title={
+                      <Box>
+                        {getPlanIcon(plan.id)}
+                        <Typography variant="h5" sx={{ fontWeight: 'bold', mt: 1 }}>
+                          {plan.nombre}
+                        </Typography>
+                        {plan.slogan && (
+                          <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                            "{plan.slogan}"
+                          </Typography>
+                        )}
+                      </Box>
+                    }
+                  />
+
+                  <CardContent sx={{ flexGrow: 1, pt: 3 }}>
                     {/* Precio */}
                     <Box sx={{ textAlign: 'center', mb: 3 }}>
-                      <Typography variant="h3" fontWeight="bold" color="primary">
-                        {formatPrice(plan.precio)}
-                      </Typography>
+                      {plan.precio === 0 ? (
+                        <Typography variant="h3" sx={{ fontWeight: 'bold', color: 'success.main' }}>
+                          Gratis
+                        </Typography>
+                      ) : (
+                        <>
+                          <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+                            ${plan.precio}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            /mes
+                          </Typography>
+                        </>
+                      )}
+                      {plan.duracionDias && (
+                        <Chip 
+                          label={`${plan.duracionDias} dias gratis`} 
+                          size="small" 
+                          color="success" 
+                          sx={{ mt: 1 }} 
+                        />
+                      )}
                     </Box>
-                    
-                    <Divider sx={{ my: 2 }} />
-                    
-                    {/* Límites principales */}
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                      Límites incluidos:
+
+                    <Divider sx={{ mb: 2 }} />
+
+                    {/* Limites principales */}
+                    <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                      Limites:
                     </Typography>
                     <List dense>
-                      {[
-                        { key: 'clientes', label: 'Clientes' },
-                        { key: 'productos', label: 'Productos' },
-                        { key: 'ventas', label: 'Ventas/mes' },
-                        { key: 'eventos', label: 'Eventos' },
-                        { key: 'usuarios', label: 'Usuarios' },
-                      ].map(({ key, label }) => (
-                        <ListItem key={key} sx={{ py: 0.5, px: 0 }}>
-                          <ListItemIcon sx={{ minWidth: 28 }}>
-                            <CheckIcon fontSize="small" color="success" />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={`${formatLimit(plan.limites[key])} ${label}`}
-                            primaryTypographyProps={{ variant: 'body2' }}
-                          />
-                        </ListItem>
-                      ))}
+                      <ListItem sx={{ py: 0.5 }}>
+                        <ListItemIcon sx={{ minWidth: 32 }}>
+                          <CheckIcon color="success" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary={`${formatLimit(plan.limites?.clientes)} clientes`}
+                          primaryTypographyProps={{ variant: 'body2' }}
+                        />
+                      </ListItem>
+                      <ListItem sx={{ py: 0.5 }}>
+                        <ListItemIcon sx={{ minWidth: 32 }}>
+                          <CheckIcon color="success" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary={`${formatLimit(plan.limites?.productos)} productos`}
+                          primaryTypographyProps={{ variant: 'body2' }}
+                        />
+                      </ListItem>
+                      <ListItem sx={{ py: 0.5 }}>
+                        <ListItemIcon sx={{ minWidth: 32 }}>
+                          <CheckIcon color="success" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary={`${formatLimit(plan.limites?.ventas)} ventas`}
+                          primaryTypographyProps={{ variant: 'body2' }}
+                        />
+                      </ListItem>
+                      <ListItem sx={{ py: 0.5 }}>
+                        <ListItemIcon sx={{ minWidth: 32 }}>
+                          <CheckIcon color="success" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary={`${formatLimit(plan.limites?.usuarios)} usuarios`}
+                          primaryTypographyProps={{ variant: 'body2' }}
+                        />
+                      </ListItem>
                     </List>
-                    
-                    <Divider sx={{ my: 2 }} />
-                    
-                    {/* Características destacadas */}
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                      Características:
+
+                    {/* Modulos destacados */}
+                    <Typography variant="subtitle2" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>
+                      Modulos:
                     </Typography>
                     <List dense>
-                      {plan.caracteristicas.slice(0, 4).map((feature) => (
-                        <ListItem key={feature.id} sx={{ py: 0.5, px: 0 }}>
+                      {plan.modulos?.slice(0, 5).map((modulo) => (
+                        <ListItem key={modulo.id} sx={{ py: 0.25 }}>
                           <ListItemIcon sx={{ minWidth: 28 }}>
-                            {feature.disponible ? (
-                              <CheckIcon fontSize="small" color="success" />
+                            {modulo.disponible ? (
+                              <CheckIcon color="success" fontSize="small" />
                             ) : (
-                              <CloseIcon fontSize="small" color="disabled" />
+                              <CloseIcon color="disabled" fontSize="small" />
                             )}
                           </ListItemIcon>
-                          <ListItemText
-                            primary={feature.nombre}
+                          <ListItemText 
+                            primary={modulo.nombre}
                             primaryTypographyProps={{ 
                               variant: 'body2',
-                              color: feature.disponible ? 'text.primary' : 'text.disabled',
+                              color: modulo.disponible ? 'text.primary' : 'text.disabled',
                             }}
                           />
                         </ListItem>
                       ))}
                     </List>
                   </CardContent>
-                  
+
                   <CardActions sx={{ p: 2, pt: 0 }}>
                     <Button
-                      variant={isPro ? 'contained' : 'outlined'}
-                      color={planColors[plan.id]}
+                      variant={isCurrentPlan ? 'outlined' : 'contained'}
+                      color={isCurrentPlan ? 'success' : 'primary'}
                       fullWidth
-                      size="large"
                       disabled={isCurrentPlan}
                       onClick={() => handleSelectPlan(plan.id)}
+                      sx={{
+                        py: 1.5,
+                        fontWeight: 'bold',
+                      }}
                     >
-                      {isCurrentPlan ? 'Plan actual' : 'Seleccionar'}
+                      {isCurrentPlan ? 'Plan Actual' : plan.precio === 0 ? 'Comenzar Gratis' : 'Seleccionar Plan'}
                     </Button>
                   </CardActions>
                 </Card>
@@ -307,130 +364,81 @@ const Planes = () => {
             );
           })}
         </Grid>
-      ) : (
-        /* Vista de comparación de características */
-        <Paper sx={{ overflow: 'hidden' }}>
-          <Box sx={{ overflowX: 'auto' }}>
-            <Box sx={{ minWidth: 800 }}>
-              {/* Header de la tabla */}
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: '200px repeat(3, 1fr)',
-                  bgcolor: 'grey.100',
-                  borderBottom: 1,
-                  borderColor: 'divider',
-                }}
-              >
-                <Box sx={{ p: 2, fontWeight: 'bold' }}>Característica</Box>
-                {plans.filter(p => p.id !== 'free_trial').map((plan) => (
-                  <Box 
-                    key={plan.id} 
-                    sx={{ 
-                      p: 2, 
-                      textAlign: 'center', 
-                      fontWeight: 'bold',
-                      bgcolor: currentPlan?.id === plan.id ? alpha(theme.palette.primary.main, 0.1) : 'transparent',
-                    }}
-                  >
-                    {plan.nombre}
-                    <Typography variant="body2" color="text.secondary">
-                      {formatPrice(plan.precio)}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-              
-              {/* Sección de límites */}
-              <Box sx={{ p: 2, bgcolor: 'grey.50', fontWeight: 'bold' }}>
-                Límites
-              </Box>
-              {[
-                { key: 'clientes', label: 'Clientes' },
-                { key: 'productos', label: 'Productos' },
-                { key: 'servicios', label: 'Servicios' },
-                { key: 'ventas', label: 'Ventas' },
-                { key: 'eventos', label: 'Eventos' },
-                { key: 'cotizaciones', label: 'Cotizaciones' },
-                { key: 'usuarios', label: 'Usuarios' },
-                { key: 'almacenes', label: 'Almacenes' },
-              ].map(({ key, label }) => (
+      )}
+
+      {/* Vista de comparacion detallada */}
+      {activeTab === 1 && (
+        <Paper sx={{ overflow: 'auto' }}>
+          <Box sx={{ minWidth: 800 }}>
+            {/* Encabezado de planes */}
+            <Box sx={{ display: 'flex', borderBottom: 1, borderColor: 'divider' }}>
+              <Box sx={{ width: 200, p: 2, fontWeight: 'bold' }}>Caracteristicas</Box>
+              {sortedPlanes.map((plan) => (
                 <Box
-                  key={key}
+                  key={plan.id}
                   sx={{
-                    display: 'grid',
-                    gridTemplateColumns: '200px repeat(3, 1fr)',
-                    borderBottom: 1,
-                    borderColor: 'divider',
-                    '&:hover': { bgcolor: 'grey.50' },
+                    flex: 1,
+                    p: 2,
+                    textAlign: 'center',
+                    bgcolor: currentPlan?.id === plan.id ? alpha(theme.palette.primary.main, 0.1) : 'transparent',
                   }}
                 >
-                  <Box sx={{ p: 2 }}>{label}</Box>
-                  {plans.filter(p => p.id !== 'free_trial').map((plan) => (
-                    <Box key={plan.id} sx={{ p: 2, textAlign: 'center' }}>
-                      <Chip
-                        label={formatLimit(plan.limites[key])}
-                        size="small"
-                        color={plan.limites[key] === -1 ? 'success' : 'default'}
-                        variant={plan.limites[key] === -1 ? 'filled' : 'outlined'}
-                      />
+                  <Typography variant="h6" fontWeight="bold">
+                    {plan.nombre}
+                  </Typography>
+                  <Typography variant="h5" color="primary.main" fontWeight="bold">
+                    {plan.precio === 0 ? 'Gratis' : `$${plan.precio}/mes`}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+
+            {/* Limites */}
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+              <Box sx={{ p: 2, bgcolor: 'grey.100', fontWeight: 'bold' }}>
+                Limites Operativos
+              </Box>
+              {['clientes', 'productos', 'ventas', 'eventos', 'cotizaciones', 'usuarios'].map((limite) => (
+                <Box key={limite} sx={{ display: 'flex', borderBottom: 1, borderColor: 'divider' }}>
+                  <Box sx={{ width: 200, p: 2, textTransform: 'capitalize' }}>{limite}</Box>
+                  {sortedPlanes.map((plan) => (
+                    <Box
+                      key={`${plan.id}-${limite}`}
+                      sx={{
+                        flex: 1,
+                        p: 2,
+                        textAlign: 'center',
+                        bgcolor: currentPlan?.id === plan.id ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
+                      }}
+                    >
+                      {formatLimit(plan.limites?.[limite] || 0)}
                     </Box>
                   ))}
                 </Box>
               ))}
-              
-              {/* Sección de módulos */}
-              <Box sx={{ p: 2, bgcolor: 'grey.50', fontWeight: 'bold' }}>
-                Módulos
+            </Box>
+
+            {/* Modulos */}
+            <Box>
+              <Box sx={{ p: 2, bgcolor: 'grey.100', fontWeight: 'bold' }}>
+                Modulos Disponibles
               </Box>
-              {plans[0]?.modulos?.map((modulo) => (
-                <Box
-                  key={modulo.id}
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: '200px repeat(3, 1fr)',
-                    borderBottom: 1,
-                    borderColor: 'divider',
-                    '&:hover': { bgcolor: 'grey.50' },
-                  }}
-                >
-                  <Box sx={{ p: 2 }}>{modulo.nombre}</Box>
-                  {plans.filter(p => p.id !== 'free_trial').map((plan) => {
-                    const planModulo = plan.modulos.find(m => m.id === modulo.id);
+              {sortedPlanes[0]?.modulos?.map((moduloRef) => (
+                <Box key={moduloRef.id} sx={{ display: 'flex', borderBottom: 1, borderColor: 'divider' }}>
+                  <Box sx={{ width: 200, p: 2 }}>{moduloRef.nombre}</Box>
+                  {sortedPlanes.map((plan) => {
+                    const modulo = plan.modulos?.find((m) => m.id === moduloRef.id);
                     return (
-                      <Box key={plan.id} sx={{ p: 2, textAlign: 'center' }}>
-                        {planModulo?.disponible ? (
-                          <CheckIcon color="success" />
-                        ) : (
-                          <CloseIcon color="disabled" />
-                        )}
-                      </Box>
-                    );
-                  })}
-                </Box>
-              ))}
-              
-              {/* Sección de características */}
-              <Box sx={{ p: 2, bgcolor: 'grey.50', fontWeight: 'bold' }}>
-                Características adicionales
-              </Box>
-              {plans[0]?.caracteristicas?.map((caracteristica) => (
-                <Box
-                  key={caracteristica.id}
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: '200px repeat(3, 1fr)',
-                    borderBottom: 1,
-                    borderColor: 'divider',
-                    '&:hover': { bgcolor: 'grey.50' },
-                  }}
-                >
-                  <Box sx={{ p: 2 }}>{caracteristica.nombre}</Box>
-                  {plans.filter(p => p.id !== 'free_trial').map((plan) => {
-                    const planCarac = plan.caracteristicas.find(c => c.id === caracteristica.id);
-                    return (
-                      <Box key={plan.id} sx={{ p: 2, textAlign: 'center' }}>
-                        {planCarac?.disponible ? (
+                      <Box
+                        key={`${plan.id}-${moduloRef.id}`}
+                        sx={{
+                          flex: 1,
+                          p: 2,
+                          textAlign: 'center',
+                          bgcolor: currentPlan?.id === plan.id ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
+                        }}
+                      >
+                        {modulo?.disponible ? (
                           <CheckIcon color="success" />
                         ) : (
                           <CloseIcon color="disabled" />
@@ -444,18 +452,20 @@ const Planes = () => {
           </Box>
         </Paper>
       )}
-      
-      {/* CTA final */}
-      <Box sx={{ textAlign: 'center', mt: 6 }}>
-        <Typography variant="h6" gutterBottom>
-          ¿Tienes preguntas sobre los planes?
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Nuestro equipo está listo para ayudarte a elegir el mejor plan para tu negocio.
-        </Typography>
-        <Button variant="outlined" size="large">
-          Contactar ventas
-        </Button>
+
+      {/* Seccion de contacto */}
+      <Box sx={{ mt: 6, textAlign: 'center' }}>
+        <Paper sx={{ p: 4, bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
+          <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold' }}>
+            Necesitas un plan personalizado?
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+            Contacta a nuestro equipo de ventas para obtener una solucion a medida para tu empresa.
+          </Typography>
+          <Button variant="contained" color="primary" size="large">
+            Contactar Ventas
+          </Button>
+        </Paper>
       </Box>
     </Container>
   );

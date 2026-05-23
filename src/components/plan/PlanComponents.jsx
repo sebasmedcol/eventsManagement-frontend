@@ -19,10 +19,10 @@ import {
   Info as InfoIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
-import { usePlan } from '../context/PlanContext';
+import { usePlan } from '../../context/PlanContext';
 
 /**
- * Componente que envuelve contenido y lo restringe basado en acceso a módulos
+ * Componente que envuelve contenido y lo restringe basado en acceso a modulos
  */
 export const PlanRestricted = ({ 
   moduleName, 
@@ -64,7 +64,7 @@ export const PlanRestricted = ({
     >
       <LockIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
       <Typography variant="h6" color="text.secondary" gutterBottom>
-        Módulo no disponible
+        Modulo no disponible
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 400, mb: 2 }}>
         {message}
@@ -82,7 +82,7 @@ export const PlanRestricted = ({
 };
 
 /**
- * Componente que envuelve contenido y lo restringe basado en características
+ * Componente que envuelve contenido y lo restringe basado en caracteristicas
  */
 export const FeatureRestricted = ({ 
   featureName, 
@@ -117,7 +117,7 @@ export const FeatureRestricted = ({
 };
 
 /**
- * Botón con verificación de límites
+ * Boton con verificacion de limites
  */
 export const LimitedButton = ({
   resourceType,
@@ -271,7 +271,7 @@ export const TrialBanner = ({ onClose, variant = 'standard' }) => {
           </Button>
         }
       >
-        <AlertTitle>Tu período de prueba ha expirado</AlertTitle>
+        <AlertTitle>Tu periodo de prueba ha expirado</AlertTitle>
         Por favor, selecciona un plan para continuar usando NextEvents.
       </Alert>
     );
@@ -300,13 +300,13 @@ export const TrialBanner = ({ onClose, variant = 'standard' }) => {
       >
         <AlertTitle>
           {diasRestantes === 0 
-            ? 'Último día de prueba' 
+            ? 'Ultimo dia de prueba' 
             : diasRestantes === 1 
-              ? 'Queda 1 día de prueba'
-              : `Quedan ${diasRestantes} días de prueba`
+              ? 'Queda 1 dia de prueba'
+              : `Quedan ${diasRestantes} dias de prueba`
           }
         </AlertTitle>
-        Aprovecha para explorar todas las funcionalidades antes de que termine tu período de prueba.
+        Aprovecha para explorar todas las funcionalidades antes de que termine tu periodo de prueba.
       </Alert>
     );
   }
@@ -315,7 +315,7 @@ export const TrialBanner = ({ onClose, variant = 'standard' }) => {
 };
 
 /**
- * Card de recomendación de upgrade
+ * Card de recomendacion de upgrade
  */
 export const UpgradeRecommendation = ({ variant = 'outlined' }) => {
   const { shouldRecommendUpgrade, getUpgradeRecommendation, currentPlan } = usePlan();
@@ -337,7 +337,7 @@ export const UpgradeRecommendation = ({ variant = 'outlined' }) => {
         <UpgradeIcon sx={{ color: 'primary.main', mt: 0.5 }} />
         <Box sx={{ flex: 1 }}>
           <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
-            ¿Listo para crecer?
+            Listo para crecer?
           </Typography>
           <Typography variant="body2" color="text.secondary" gutterBottom>
             {recommendation.razon}
@@ -361,7 +361,7 @@ export const UpgradeRecommendation = ({ variant = 'outlined' }) => {
 };
 
 /**
- * Tooltip con icono de información sobre restricción de plan
+ * Tooltip con icono de informacion sobre restriccion de plan
  */
 export const PlanInfoTooltip = ({ message }) => {
   return (
@@ -439,15 +439,7 @@ export const UsageSummary = ({ resources = ['clientes', 'productos', 'ventas', '
   );
 };
 
-export default {
-  PlanRestricted,
-  FeatureRestricted,
-  LimitedButton,
-  UsageIndicator,
-  TrialBanner,
-  UpgradeRecommendation,
-  PlanInfoTooltip,
-  LockedIcon,
-  PlanBadge,
-  UsageSummary,
+// Export individual components
+export {
+  PlanRestricted as default,
 };

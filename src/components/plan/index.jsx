@@ -1,3 +1,4 @@
+// Export all plan components
 export {
   PlanRestricted,
   FeatureRestricted,

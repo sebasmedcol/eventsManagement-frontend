@@ -1,14 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { useAuth } from './AuthContext';
 
 /**
- * Contexto para gestión del plan de suscripción
- * Proporciona información sobre el plan, límites y accesos a módulos/características
+ * Contexto para gestion del plan de suscripcion
+ * Proporciona informacion sobre el plan, limites y accesos a modulos/caracteristicas
  */
 const PlanContext = createContext(null);
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const PlanProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
@@ -17,7 +15,7 @@ export const PlanProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   /**
-   * Obtiene la información completa del plan desde el servidor
+   * Obtiene la informacion completa del plan desde el servidor
    */
   const fetchPlanInfo = useCallback(async () => {
     if (!isAuthenticated) {
@@ -29,25 +27,20 @@ export const PlanProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/config/plan-info`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.get('/config/plan-info');
 
       if (response.data.success) {
         setPlanInfo(response.data.data);
       }
     } catch (err) {
-      console.error('Error al obtener información del plan:', err);
-      setError(err.response?.data?.message || 'Error al cargar información del plan');
+      console.error('Error al obtener informacion del plan:', err);
+      setError(err.response?.data?.message || 'Error al cargar informacion del plan');
     } finally {
       setLoading(false);
     }
   }, [isAuthenticated]);
 
-  // Cargar información del plan al autenticarse
+  // Cargar informacion del plan al autenticarse
   useEffect(() => {
     if (isAuthenticated) {
       fetchPlanInfo();
@@ -58,8 +51,8 @@ export const PlanProvider = ({ children }) => {
   }, [isAuthenticated, fetchPlanInfo]);
 
   /**
-   * Verifica si un módulo está disponible en el plan actual
-   * @param {string} moduleName - Nombre del módulo
+   * Verifica si un modulo esta disponible en el plan actual
+   * @param {string} moduleName - Nombre del modulo
    * @returns {boolean}
    */
   const canAccessModule = useCallback((moduleName) => {
@@ -68,8 +61,8 @@ export const PlanProvider = ({ children }) => {
   }, [planInfo]);
 
   /**
-   * Verifica si una característica está disponible en el plan actual
-   * @param {string} featureName - Nombre de la característica
+   * Verifica si una caracteristica esta disponible en el plan actual
+   * @param {string} featureName - Nombre de la caracteristica
    * @returns {boolean}
    */
   const canUseFeature = useCallback((featureName) => {
@@ -78,7 +71,7 @@ export const PlanProvider = ({ children }) => {
   }, [planInfo]);
 
   /**
-   * Verifica el estado de un límite de recursos
+   * Verifica el estado de un limite de recursos
    * @param {string} resourceType - Tipo de recurso (clientes, productos, etc.)
    * @returns {Object} { canCreate, limit, current, remaining, percentage, unlimited }
    */
@@ -118,8 +111,8 @@ export const PlanProvider = ({ children }) => {
   }, [planInfo]);
 
   /**
-   * Obtiene el mensaje de restricción para un módulo
-   * @param {string} moduleName - Nombre del módulo
+   * Obtiene el mensaje de restriccion para un modulo
+   * @param {string} moduleName - Nombre del modulo
    * @returns {string|null}
    */
   const getModuleRestrictionMessage = useCallback((moduleName) => {
@@ -128,12 +121,12 @@ export const PlanProvider = ({ children }) => {
     const moduloNombre = planInfo?.modulos?.[moduleName]?.nombre || moduleName;
     const planNombre = planInfo?.plan?.nombre || 'actual';
     
-    return `El módulo "${moduloNombre}" no está disponible en tu plan ${planNombre}. Mejora tu plan para acceder a esta funcionalidad.`;
+    return `El modulo "${moduloNombre}" no esta disponible en tu plan ${planNombre}. Mejora tu plan para acceder a esta funcionalidad.`;
   }, [canAccessModule, planInfo]);
 
   /**
-   * Obtiene el mensaje de restricción para una característica
-   * @param {string} featureName - Nombre de la característica
+   * Obtiene el mensaje de restriccion para una caracteristica
+   * @param {string} featureName - Nombre de la caracteristica
    * @returns {string|null}
    */
   const getFeatureRestrictionMessage = useCallback((featureName) => {
@@ -142,11 +135,11 @@ export const PlanProvider = ({ children }) => {
     const featureNombre = planInfo?.caracteristicas?.[featureName]?.nombre || featureName;
     const planNombre = planInfo?.plan?.nombre || 'actual';
     
-    return `La función "${featureNombre}" no está disponible en tu plan ${planNombre}. Mejora tu plan para usar esta función.`;
+    return `La funcion "${featureNombre}" no esta disponible en tu plan ${planNombre}. Mejora tu plan para usar esta funcion.`;
   }, [canUseFeature, planInfo]);
 
   /**
-   * Obtiene el mensaje de límite alcanzado para un recurso
+   * Obtiene el mensaje de limite alcanzado para un recurso
    * @param {string} resourceType - Tipo de recurso
    * @returns {string|null}
    */
@@ -157,11 +150,11 @@ export const PlanProvider = ({ children }) => {
     const displayName = limitInfo.displayName || resourceType;
     const planNombre = planInfo?.plan?.nombre || 'actual';
     
-    return `Has alcanzado el límite de ${displayName} para tu plan ${planNombre} (${limitInfo.current}/${limitInfo.limit}). Mejora tu plan para agregar más.`;
+    return `Has alcanzado el limite de ${displayName} para tu plan ${planNombre} (${limitInfo.current}/${limitInfo.limit}). Mejora tu plan para agregar mas.`;
   }, [checkLimit, planInfo]);
 
   /**
-   * Verifica si el período de prueba está activo
+   * Verifica si el periodo de prueba esta activo
    */
   const isTrialActive = useCallback(() => {
     if (!planInfo?.trial) return false;
@@ -169,7 +162,7 @@ export const PlanProvider = ({ children }) => {
   }, [planInfo]);
 
   /**
-   * Verifica si el período de prueba ha expirado
+   * Verifica si el periodo de prueba ha expirado
    */
   const isTrialExpired = useCallback(() => {
     if (!planInfo?.trial) return false;
@@ -177,7 +170,7 @@ export const PlanProvider = ({ children }) => {
   }, [planInfo]);
 
   /**
-   * Obtiene los días restantes del trial
+   * Obtiene los dias restantes del trial
    */
   const getTrialDaysRemaining = useCallback(() => {
     if (!planInfo?.trial) return null;
@@ -192,14 +185,14 @@ export const PlanProvider = ({ children }) => {
   }, [planInfo]);
 
   /**
-   * Obtiene información del plan recomendado para upgrade
+   * Obtiene informacion del plan recomendado para upgrade
    */
   const getUpgradeRecommendation = useCallback(() => {
     return planInfo?.upgrade || null;
   }, [planInfo]);
 
   /**
-   * Formatea el texto de uso de un límite
+   * Formatea el texto de uso de un limite
    * @param {string} resourceType - Tipo de recurso
    * @returns {string} Texto formateado (ej: "28/30" o "Ilimitado")
    */
@@ -237,7 +230,7 @@ export const PlanProvider = ({ children }) => {
     canUseFeature,
     checkLimit,
     
-    // Mensajes de restricción
+    // Mensajes de restriccion
     getModuleRestrictionMessage,
     getFeatureRestrictionMessage,
     getLimitRestrictionMessage,
@@ -279,9 +272,9 @@ export const usePlan = () => {
 };
 
 /**
- * HOC para proteger componentes basados en acceso a módulos
+ * HOC para proteger componentes basados en acceso a modulos
  * @param {React.Component} Component - Componente a proteger
- * @param {string} moduleName - Nombre del módulo requerido
+ * @param {string} moduleName - Nombre del modulo requerido
  * @param {React.Component} FallbackComponent - Componente a mostrar si no tiene acceso
  */
 export const withModuleAccess = (Component, moduleName, FallbackComponent = null) => {
@@ -300,9 +293,9 @@ export const withModuleAccess = (Component, moduleName, FallbackComponent = null
 };
 
 /**
- * HOC para proteger componentes basados en características
+ * HOC para proteger componentes basados en caracteristicas
  * @param {React.Component} Component - Componente a proteger
- * @param {string} featureName - Nombre de la característica requerida
+ * @param {string} featureName - Nombre de la caracteristica requerida
  * @param {React.Component} FallbackComponent - Componente a mostrar si no tiene acceso
  */
 export const withFeatureAccess = (Component, featureName, FallbackComponent = null) => {

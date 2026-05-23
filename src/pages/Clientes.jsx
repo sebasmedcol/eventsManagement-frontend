@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaPlus, FaEdit, FaTrash, FaSearch, FaEye } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import api from '../services/api'; // ✅ ahora usamos api.js
+import api from '../services/api';
 import usePermisos from '../hooks/usePermisos';
+import { usePlan } from '../context/PlanContext';
+import { LimitedButton, UsageIndicator, PlanRestricted, UpgradeRecommendation } from '../components/plan';
 import {
   Box,
   Typography,
@@ -36,6 +38,7 @@ import {
 
 const Clientes = () => {
   const { puedeCrear, puedeEditar, puedeEliminar } = usePermisos();
+  const { checkLimit, refreshPlanInfo, canAccessModule, shouldRecommendUpgrade } = usePlan();
   const indicativos = ['+57', '+1', '+34', '+52', '+54', '+56', '+51', '+55'];
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,17 +60,30 @@ const Clientes = () => {
   const [indicativoChoice, setIndicativoChoice] = useState('+57');
   const [indicativoCustom, setIndicativoCustom] = useState('');
 
+  // Verificar acceso al modulo
+  const hasModuleAccess = canAccessModule('clientes');
+  const limitInfo = checkLimit('clientes');
+
   useEffect(() => {
-    fetchClientes();
-  }, []);
+    if (hasModuleAccess) {
+      fetchClientes();
+    }
+  }, [hasModuleAccess]);
 
   const fetchClientes = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/clientes'); // ✅ cambiado
+      const response = await api.get('/clientes');
       setClientes(response.data);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error al cargar los clientes');
+      // Manejar errores especificos de plan
+      if (error.response?.data?.code === 'MODULE_NOT_AVAILABLE') {
+        toast.error('Este modulo no esta disponible en tu plan actual');
+      } else if (error.response?.data?.code === 'TRIAL_EXPIRED') {
+        toast.error('Tu periodo de prueba ha expirado. Por favor selecciona un plan.');
+      } else {
+        toast.error(error.response?.data?.message || 'Error al cargar los clientes');
+      }
       console.error('Error al cargar clientes:', error);
     } finally {
       setLoading(false);
@@ -76,9 +92,10 @@ const Clientes = () => {
 
   const handleDelete = async (id) => {
     try {
-      await api.delete(`/clientes/${id}`); // ✅ cambiado
+      await api.delete(`/clientes/${id}`);
       toast.success('Cliente eliminado correctamente');
       fetchClientes();
+      refreshPlanInfo(); // Actualizar info del plan despues de eliminar
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error al eliminar el cliente');
       console.error('Error al eliminar cliente:', error);
@@ -108,11 +125,11 @@ const Clientes = () => {
         return;
       }
       if (docNumTrim.length > 30) {
-        toast.error('El número de documento no puede superar 30 caracteres');
+        toast.error('El numero de documento no puede superar 30 caracteres');
         return;
       }
       if (telefonoTrim.length > 15) {
-        toast.error('El teléfono no puede superar 15 caracteres');
+        toast.error('El telefono no puede superar 15 caracteres');
         return;
       }
       if (!indicativoFinal) {
@@ -130,12 +147,20 @@ const Clientes = () => {
         indicativo: indicativoFinal,
       };
 
-      await api.post('/clientes', payload); // ✅ cambiado
+      await api.post('/clientes', payload);
       toast.success('Cliente creado correctamente');
       fetchClientes();
+      refreshPlanInfo(); // Actualizar info del plan despues de crear
       closeModal();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error al crear el cliente');
+      // Manejar errores especificos de plan
+      if (error.response?.data?.code === 'LIMIT_REACHED') {
+        toast.error(`Has alcanzado el limite de clientes de tu plan. Mejora tu plan para agregar mas.`);
+      } else if (error.response?.data?.code === 'TRIAL_EXPIRED') {
+        toast.error('Tu periodo de prueba ha expirado. Por favor selecciona un plan.');
+      } else {
+        toast.error(error.response?.data?.message || 'Error al crear el cliente');
+      }
       console.error('Error al crear cliente:', error);
     }
   };
@@ -163,11 +188,11 @@ const Clientes = () => {
         return;
       }
       if (docNumTrim.length > 30) {
-        toast.error('El número de documento no puede superar 30 caracteres');
+        toast.error('El numero de documento no puede superar 30 caracteres');
         return;
       }
       if (telefonoTrim.length > 15) {
-        toast.error('El teléfono no puede superar 15 caracteres');
+        toast.error('El telefono no puede superar 15 caracteres');
         return;
       }
       if (!indicativoFinal) {
@@ -185,7 +210,7 @@ const Clientes = () => {
         indicativo: indicativoFinal,
       };
 
-      await api.put(`/clientes/${selectedCliente._id}`, payload); // ✅ cambiado
+      await api.put(`/clientes/${selectedCliente._id}`, payload);
       toast.success('Cliente actualizado correctamente');
       fetchClientes();
       closeModal();
@@ -278,6 +303,15 @@ const Clientes = () => {
     setCurrentPage(1);
   };
 
+  // Si el modulo no esta disponible, mostrar mensaje de restriccion
+  if (!hasModuleAccess) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <PlanRestricted moduleName="clientes" />
+      </Container>
+    );
+  }
+
   if (loading) {
     return (
       <Box 
@@ -297,25 +331,39 @@ const Clientes = () => {
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
-          Módulo de Clientes
+          Modulo de Clientes
         </Typography>
-        {puedeCrear('clientes') && (
-          <Button
-            onClick={() => openModal('crear')}
-            variant="contained"
-            color="primary"
-            startIcon={<FaPlus />}
-          >
-            Crear Cliente
-          </Button>
-        )}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Indicador de uso de limite */}
+          <UsageIndicator resourceType="clientes" showProgress={true} size="medium" />
+          
+          {puedeCrear('clientes') && (
+            <LimitedButton
+              resourceType="clientes"
+              onClick={() => openModal('crear')}
+              variant="contained"
+              color="primary"
+              startIcon={<FaPlus />}
+              showUsage={false}
+            >
+              Crear Cliente
+            </LimitedButton>
+          )}
+        </Box>
       </Box>
 
-      {/* Controles de búsqueda y paginación */}
+      {/* Recomendacion de upgrade si esta cerca del limite */}
+      {shouldRecommendUpgrade() && (
+        <Box sx={{ mb: 3 }}>
+          <UpgradeRecommendation />
+        </Box>
+      )}
+
+      {/* Controles de busqueda y paginacion */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <TextField
-            placeholder="🔍 Buscar clientes por nombre..."
+            placeholder="Buscar clientes por nombre..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
@@ -330,28 +378,28 @@ const Clientes = () => {
             size="small"
           />
           <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Items por página</InputLabel>
+            <InputLabel>Items por pagina</InputLabel>
             <Select
               value={itemsPerPage}
               onChange={handleItemsPerPageChange}
-              label="Items por página"
+              label="Items por pagina"
             >
-              <MenuItem value={5}>5 por página</MenuItem>
-              <MenuItem value={10}>10 por página</MenuItem>
-              <MenuItem value={15}>15 por página</MenuItem>
-              <MenuItem value={25}>25 por página</MenuItem>
+              <MenuItem value={5}>5 por pagina</MenuItem>
+              <MenuItem value={10}>10 por pagina</MenuItem>
+              <MenuItem value={15}>15 por pagina</MenuItem>
+              <MenuItem value={25}>25 por pagina</MenuItem>
             </Select>
           </FormControl>
         </Box>
       </Box>
 
-      {/* Información de paginación */}
+      {/* Informacion de paginacion */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
         <Typography variant="body2" fontWeight="bold" color="text.secondary">
           Total: {filteredClientes.length} clientes
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Página {filteredClientes.length > 0 ? currentPage : 0} de {totalPages}
+          Pagina {filteredClientes.length > 0 ? currentPage : 0} de {totalPages}
         </Typography>
       </Box>
 
@@ -368,8 +416,8 @@ const Clientes = () => {
                   <TableRow>
                     <TableCell>ID</TableCell>
                     <TableCell>Nombre Completo</TableCell>
-                    <TableCell>Teléfono</TableCell>
-                    <TableCell>Dirección</TableCell>
+                    <TableCell>Telefono</TableCell>
+                    <TableCell>Direccion</TableCell>
                     <TableCell>Estado</TableCell>
                     <TableCell align="right">Acciones</TableCell>
                   </TableRow>
@@ -438,7 +486,7 @@ const Clientes = () => {
               </Table>
             </TableContainer>
 
-            {/* Paginación */}
+            {/* Paginacion */}
             {totalPages > 1 && (
               <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
                 <Pagination
@@ -461,7 +509,7 @@ const Clientes = () => {
           {modalType === 'crear' && 'Crear Nuevo Cliente'}
           {modalType === 'ver' && 'Detalles del Cliente'}
           {modalType === 'editar' && 'Editar Cliente'}
-          {modalType === 'eliminar' && 'Confirmar Eliminación'}
+          {modalType === 'eliminar' && 'Confirmar Eliminacion'}
         </DialogTitle>
         <DialogContent>
           {modalType === 'ver' && selectedCliente && (
@@ -473,7 +521,7 @@ const Clientes = () => {
                 <strong>Nombre Completo:</strong> {selectedCliente.nombreCompleto}
               </Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                <strong>Teléfono:</strong> {selectedCliente.telefono}
+                <strong>Telefono:</strong> {selectedCliente.telefono}
               </Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
                 <strong>Indicativo:</strong> {selectedCliente.indicativo || '-'}
@@ -484,11 +532,11 @@ const Clientes = () => {
               <Typography variant="body1" sx={{ mb: 1 }}>
                 <strong>Documento:</strong>{' '}
                 {selectedCliente.documentoTipo
-                  ? `${selectedCliente.documentoTipo} · ${selectedCliente.documentoNumero || ''}`
+                  ? `${selectedCliente.documentoTipo} - ${selectedCliente.documentoNumero || ''}`
                   : '-'}
               </Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                <strong>Dirección:</strong> {selectedCliente.direccion}
+                <strong>Direccion:</strong> {selectedCliente.direccion}
               </Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
                 <strong>Estado:</strong> {selectedCliente.estado ? 'Activo' : 'Inactivo'}
@@ -530,8 +578,8 @@ const Clientes = () => {
                   label="Tipo de documento (opcional)"
                 >
                   <MenuItem value="">Sin documento</MenuItem>
-                  <MenuItem value="cedula">Cédula</MenuItem>
-                  <MenuItem value="cedula_extranjeria">Cédula de Extranjería</MenuItem>
+                  <MenuItem value="cedula">Cedula</MenuItem>
+                  <MenuItem value="cedula_extranjeria">Cedula de Extranjeria</MenuItem>
                   <MenuItem value="ppt">PPT</MenuItem>
                   <MenuItem value="rut">RUT</MenuItem>
                   <MenuItem value="nit">NIT</MenuItem>
@@ -539,12 +587,12 @@ const Clientes = () => {
               </FormControl>
               <TextField
                 fullWidth
-                label="Número de documento (opcional)"
+                label="Numero de documento (opcional)"
                 name="documentoNumero"
                 value={formData.documentoNumero}
                 onChange={handleInputChange}
                 margin="normal"
-                placeholder="Máx 30 caracteres"
+                placeholder="Max 30 caracteres"
                 variant="outlined"
                 inputProps={{ maxLength: 30 }}
                 disabled={!formData.documentoTipo}
@@ -578,13 +626,13 @@ const Clientes = () => {
                 )}
                 <TextField
                   fullWidth
-                  label="Teléfono"
+                  label="Telefono"
                   name="telefono"
                   value={formData.telefono}
                   onChange={handleInputChange}
                   margin="normal"
                   required
-                  placeholder="Máx 15 caracteres"
+                  placeholder="Max 15 caracteres"
                   variant="outlined"
                   inputProps={{ maxLength: 15 }}
                   sx={{ flexGrow: 1, minWidth: 240 }}
@@ -592,14 +640,14 @@ const Clientes = () => {
               </Box>
               <TextField
                 fullWidth
-                label="Dirección"
+                label="Direccion"
                 name="direccion"
                 value={formData.direccion}
                 onChange={handleInputChange}
                 margin="normal"
                 multiline
                 rows={3}
-                placeholder="Ingrese la dirección completa..."
+                placeholder="Ingrese la direccion completa..."
                 variant="outlined"
               />
               <FormControl fullWidth margin="normal">
@@ -620,10 +668,10 @@ const Clientes = () => {
           {modalType === 'eliminar' && selectedCliente && (
             <Box>
               <Typography variant="body1" sx={{ mb: 2 }}>
-                ¿Estás seguro de que deseas eliminar el cliente <strong>"{selectedCliente.nombreCompleto}"</strong>?
+                Estas seguro de que deseas eliminar el cliente <strong>"{selectedCliente.nombreCompleto}"</strong>?
               </Typography>
               <Typography variant="body2" color="error" sx={{ fontSize: '14px' }}>
-                Esta acción no se puede deshacer.
+                Esta accion no se puede deshacer.
               </Typography>
             </Box>
           )}
@@ -651,7 +699,7 @@ const Clientes = () => {
               variant="contained" 
               color="error"
             >
-              Sí, Eliminar
+              Si, Eliminar
             </Button>
           )}
         </DialogActions>

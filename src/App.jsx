@@ -2,9 +2,11 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider } from './context/AuthContext';
+import { PlanProvider } from './context/PlanContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import PermanentSidebar from './components/PermanentSidebar';
+import { TrialBanner } from './components/plan';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Container from '@mui/material/Container';
@@ -34,6 +36,7 @@ import EmpresasAdmin from './pages/EmpresasAdmin';
 import EmpresaPendiente from './pages/EmpresaPendiente';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import Configuraciones from './pages/Configuraciones';
+import Planes from './pages/Planes';
 
 // Design tokens inspired by a modern admin template
 const getDesignTokens = (mode) => ({
@@ -147,6 +150,29 @@ const GlobalWatermark = () => {
   );
 };
 
+// Componente que muestra el TrialBanner cuando es necesario
+const AppContent = ({ children }) => {
+  const [showTrialBanner, setShowTrialBanner] = useState(true);
+  const location = useLocation();
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  
+  if (isAuthPage) {
+    return children;
+  }
+
+  return (
+    <Box sx={{ width: '100%' }}>
+      {showTrialBanner && (
+        <TrialBanner 
+          onClose={() => setShowTrialBanner(false)} 
+          variant="filled"
+        />
+      )}
+      {children}
+    </Box>
+  );
+};
+
 function App() {
   // Color mode with persistence
   const [mode, setMode] = useState(() => {
@@ -176,183 +202,196 @@ function App() {
       <CssBaseline />
       <Router>
         <AuthProvider>
-          <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-            <Navbar
-              onToggleColorMode={() => setMode((p) => (p === 'light' ? 'dark' : 'light'))}
-              mode={mode}
-              sidebarCollapsed={sidebarCollapsed}
-              onToggleSidebarCollapsed={() => setSidebarCollapsed((p) => !p)}
-            />
-            <PermanentSidebar width={drawerWidth} collapsed={sidebarCollapsed} />
-            <Box
-              component="main"
-              className="print-main main-watermark-wrapper"
-              sx={{
-                flexGrow: 1,
-                minWidth: 0,
-                mt: '64px' // Altura del AppBar
-              }}
-            >
-              {/* Marca de agua global detrás del contenido */}
-              <GlobalWatermark />
+          <PlanProvider>
+            <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+              <Navbar
+                onToggleColorMode={() => setMode((p) => (p === 'light' ? 'dark' : 'light'))}
+                mode={mode}
+                sidebarCollapsed={sidebarCollapsed}
+                onToggleSidebarCollapsed={() => setSidebarCollapsed((p) => !p)}
+              />
+              <PermanentSidebar width={drawerWidth} collapsed={sidebarCollapsed} />
+              <Box
+                component="main"
+                className="print-main main-watermark-wrapper"
+                sx={{
+                  flexGrow: 1,
+                  minWidth: 0,
+                  mt: '64px', // Altura del AppBar
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                {/* Marca de agua global detras del contenido */}
+                <GlobalWatermark />
 
-              <Container maxWidth={false} disableGutters sx={{ py: 2, px: 0 }} className="with-watermark-content">
-                <Routes>
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/empresa-pendiente" element={<EmpresaPendiente />} />
-                  
-                  <Route path="/" element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  } />
-                  
-                  <Route path="/dashboard" element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/superadmin/dashboard" element={
-                    <ProtectedRoute>
-                      <SuperAdminDashboard />
-                    </ProtectedRoute>
-                  } />
-                  
-                  {/* Rutas de Clientes */}
-                  <Route path="/clientes" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'clientes', accion: 'ver' }}>
-                      <Clientes />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/clientes/nuevo" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'clientes', accion: 'crear' }}>
-                      <ClienteForm />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/clientes/editar/:id" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'clientes', accion: 'editar' }}>
-                      <ClienteForm />
-                    </ProtectedRoute>
-                  } />
-                  
-                  {/* Rutas de Productos */}
-                  <Route path="/productos" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'productos', accion: 'ver' }}>
-                      <Productos />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/productos/nuevo" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'productos', accion: 'crear' }}>
-                      <ProductoForm />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/productos/editar/:id" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'productos', accion: 'editar' }}>
-                      <ProductoForm />
-                    </ProtectedRoute>
-                  } />
-                  
-                  {/* Rutas de Ventas */}
-                  <Route path="/ventas" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'ventas', accion: 'ver' }}>
-                      <Ventas />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/ventas/nueva" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'ventas', accion: 'crear' }}>
-                      <VentaForm />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/ventas/editar/:id" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'ventas', accion: 'editar' }}>
-                      <VentaForm />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/ventas/ver/:id" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'ventas', accion: 'ver' }}>
-                      <VentaDetalle />
-                    </ProtectedRoute>
-                  } />
+                <AppContent>
+                  <Container maxWidth={false} disableGutters sx={{ py: 2, px: 0 }} className="with-watermark-content">
+                    <Routes>
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/register" element={<Register />} />
+                      <Route path="/empresa-pendiente" element={<EmpresaPendiente />} />
+                      
+                      <Route path="/" element={
+                        <ProtectedRoute>
+                          <Dashboard />
+                        </ProtectedRoute>
+                      } />
+                      
+                      <Route path="/dashboard" element={
+                        <ProtectedRoute>
+                          <Dashboard />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/superadmin/dashboard" element={
+                        <ProtectedRoute>
+                          <SuperAdminDashboard />
+                        </ProtectedRoute>
+                      } />
+                      
+                      {/* Rutas de Clientes */}
+                      <Route path="/clientes" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'clientes', accion: 'ver' }}>
+                          <Clientes />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/clientes/nuevo" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'clientes', accion: 'crear' }}>
+                          <ClienteForm />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/clientes/editar/:id" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'clientes', accion: 'editar' }}>
+                          <ClienteForm />
+                        </ProtectedRoute>
+                      } />
+                      
+                      {/* Rutas de Productos */}
+                      <Route path="/productos" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'productos', accion: 'ver' }}>
+                          <Productos />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/productos/nuevo" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'productos', accion: 'crear' }}>
+                          <ProductoForm />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/productos/editar/:id" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'productos', accion: 'editar' }}>
+                          <ProductoForm />
+                        </ProtectedRoute>
+                      } />
+                      
+                      {/* Rutas de Ventas */}
+                      <Route path="/ventas" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'ventas', accion: 'ver' }}>
+                          <Ventas />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/ventas/nueva" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'ventas', accion: 'crear' }}>
+                          <VentaForm />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/ventas/editar/:id" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'ventas', accion: 'editar' }}>
+                          <VentaForm />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/ventas/ver/:id" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'ventas', accion: 'ver' }}>
+                          <VentaDetalle />
+                        </ProtectedRoute>
+                      } />
 
-                  {/* Rutas de Consecutivos */}
-                  <Route path="/consecutivos" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'consecutivos', accion: 'ver' }}>
-                      <ConsecutivoNavigation />
-                    </ProtectedRoute>
-                  } />
+                      {/* Rutas de Consecutivos */}
+                      <Route path="/consecutivos" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'consecutivos', accion: 'ver' }}>
+                          <ConsecutivoNavigation />
+                        </ProtectedRoute>
+                      } />
 
-                  {/* Rutas de Eventos */}
-                  <Route path="/eventos" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'eventos', accion: 'ver' }}>
-                      <Eventos />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/eventos-premium" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'eventos', accion: 'ver' }}>
-                      <EventosPremium />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/eventos-premium/:id/gestion" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'eventos', accion: 'editar' }}>
-                      <GestionEventoPremium />
-                    </ProtectedRoute>
-                  } />
+                      {/* Rutas de Eventos */}
+                      <Route path="/eventos" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'eventos', accion: 'ver' }}>
+                          <Eventos />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/eventos-premium" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'eventos', accion: 'ver' }}>
+                          <EventosPremium />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/eventos-premium/:id/gestion" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'eventos', accion: 'editar' }}>
+                          <GestionEventoPremium />
+                        </ProtectedRoute>
+                      } />
 
-                  {/* Rutas de Usuarios (solo admin, backend valida) */}
-                  <Route path="/usuarios" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'usuarios', accion: 'ver' }}>
-                      <Usuarios />
-                    </ProtectedRoute>
-                  } />
+                      {/* Rutas de Usuarios (solo admin, backend valida) */}
+                      <Route path="/usuarios" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'usuarios', accion: 'ver' }}>
+                          <Usuarios />
+                        </ProtectedRoute>
+                      } />
 
-                  {/* Rutas de Roles (solo admin, backend valida) */}
-                  <Route path="/roles" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'roles', accion: 'ver' }}>
-                      <Roles />
-                    </ProtectedRoute>
-                  } />
+                      {/* Rutas de Roles (solo admin, backend valida) */}
+                      <Route path="/roles" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'roles', accion: 'ver' }}>
+                          <Roles />
+                        </ProtectedRoute>
+                      } />
 
-                  {/* Rutas de Cotizaciones */}
-                  <Route path="/cotizaciones" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'cotizaciones', accion: 'ver' }}>
-                      <Cotizaciones />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/cotizaciones/ver/:id" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'cotizaciones', accion: 'ver' }}>
-                      <CotizacionDetalle />
-                    </ProtectedRoute>
-                  } />
+                      {/* Rutas de Cotizaciones */}
+                      <Route path="/cotizaciones" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'cotizaciones', accion: 'ver' }}>
+                          <Cotizaciones />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/cotizaciones/ver/:id" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'cotizaciones', accion: 'ver' }}>
+                          <CotizacionDetalle />
+                        </ProtectedRoute>
+                      } />
 
-                  {/* Rutas de Disponibilidad de Productos */}
-                  <Route path="/disponibilidad" element={
-                    <ProtectedRoute requiredPermission={{ modulo: 'disponibilidad', accion: 'ver' }}>
-                      <DisponibilidadProducto />
-                    </ProtectedRoute>
-                  } />
+                      {/* Rutas de Disponibilidad de Productos */}
+                      <Route path="/disponibilidad" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'disponibilidad', accion: 'ver' }}>
+                          <DisponibilidadProducto />
+                        </ProtectedRoute>
+                      } />
 
-                  {/* Rutas de Superadmin */}
-                  <Route path="/superadmin/empresas" element={
-                    <ProtectedRoute>
-                      <EmpresasAdmin />
-                    </ProtectedRoute>
-                  } />
+                      {/* Rutas de Superadmin */}
+                      <Route path="/superadmin/empresas" element={
+                        <ProtectedRoute>
+                          <EmpresasAdmin />
+                        </ProtectedRoute>
+                      } />
 
-                  <Route path="/configuraciones" element={
-                    <ProtectedRoute>
-                      <Configuraciones />
-                    </ProtectedRoute>
-                  } />
-                </Routes>
-              </Container>
+                      <Route path="/configuraciones" element={
+                        <ProtectedRoute>
+                          <Configuraciones />
+                        </ProtectedRoute>
+                      } />
+
+                      {/* Ruta de Planes */}
+                      <Route path="/planes" element={
+                        <ProtectedRoute>
+                          <Planes />
+                        </ProtectedRoute>
+                      } />
+                    </Routes>
+                  </Container>
+                </AppContent>
+              </Box>
             </Box>
-          </Box>
-          <ToastContainer position="bottom-right" />
-          </AuthProvider>
-        </Router>
-      </ThemeProvider>
-    );
-  }
+            <ToastContainer position="bottom-right" />
+          </PlanProvider>
+        </AuthProvider>
+      </Router>
+    </ThemeProvider>
+  );
+}
 
-  export default App;
+export default App;
