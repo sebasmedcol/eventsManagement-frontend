@@ -106,7 +106,11 @@ const Roles = () => {
   });
 
   useEffect(() => {
-    if (!userRol || (userRol !== 'admin' && userRol !== 'superadmin')) {
+    const tieneAcceso = userRol === 'admin' || userRol === 'superadmin' ||
+      user?.esAdminPrincipal ||
+      user?.rol_id?.permisos?.roles?.ver === true ||
+      user?.permisos?.roles?.ver === true;
+    if (!userRol || !tieneAcceso) {
       setLoading(false);
       return;
     }
@@ -232,11 +236,17 @@ const Roles = () => {
     }
   };
 
-  if (!user || (user.rol !== 'admin' && user.rol !== 'superadmin')) {
+  const puedeGestionarRoles =
+    user?.rol === 'admin' || user?.rol === 'superadmin' ||
+    user?.esAdminPrincipal ||
+    user?.rol_id?.permisos?.roles?.ver === true ||
+    user?.permisos?.roles?.ver === true;
+
+  if (!user || !puedeGestionarRoles) {
     return (
       <Container maxWidth="md">
         <Box sx={{ mt: 4 }}>
-          <Typography variant="h6">Solo los administradores pueden gestionar roles.</Typography>
+          <Typography variant="h6">No tienes permisos para gestionar roles.</Typography>
         </Box>
       </Container>
     );

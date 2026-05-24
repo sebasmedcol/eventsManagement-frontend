@@ -142,7 +142,11 @@ const Usuarios = () => {
   });
 
   useEffect(() => {
-    if (!userRol || (userRol !== 'admin' && userRol !== 'superadmin')) {
+    const tieneAcceso = userRol === 'admin' || userRol === 'superadmin' ||
+      user?.esAdminPrincipal ||
+      user?.rol_id?.permisos?.usuarios?.ver === true ||
+      user?.permisos?.usuarios?.ver === true;
+    if (!userRol || !tieneAcceso) {
       setLoading(false);
       return;
     }
@@ -419,12 +423,18 @@ const Usuarios = () => {
     return usuario.rol;
   };
 
-  if (!user || (user.rol !== 'admin' && user.rol !== 'superadmin')) {
+  const puedeGestionarUsuarios =
+    user?.rol === 'admin' || user?.rol === 'superadmin' ||
+    user?.esAdminPrincipal ||
+    user?.rol_id?.permisos?.usuarios?.ver === true ||
+    user?.permisos?.usuarios?.ver === true;
+
+  if (!user || !puedeGestionarUsuarios) {
     return (
       <Container maxWidth="md">
         <Box sx={{ mt: 4 }}>
           <Typography variant="h6">
-            Solo los administradores pueden gestionar usuarios.
+            No tienes permisos para gestionar usuarios.
           </Typography>
         </Box>
       </Container>
