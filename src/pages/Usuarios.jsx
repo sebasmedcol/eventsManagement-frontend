@@ -429,6 +429,12 @@ const Usuarios = () => {
     user?.rol_id?.permisos?.usuarios?.ver === true ||
     user?.permisos?.usuarios?.ver === true;
 
+  // Permisos granulares — determinan visibilidad de cada botón de acción
+  const esAdminTotal = user?.rol === 'admin' || user?.rol === 'superadmin' || user?.esAdminPrincipal;
+  const puedeCrearUsuario   = esAdminTotal || user?.rol_id?.permisos?.usuarios?.crear   === true || user?.permisos?.usuarios?.crear   === true;
+  const puedeEditarUsuario  = esAdminTotal || user?.rol_id?.permisos?.usuarios?.editar  === true || user?.permisos?.usuarios?.editar  === true;
+  const puedeEliminarUsuario = esAdminTotal || user?.rol_id?.permisos?.usuarios?.eliminar === true || user?.permisos?.usuarios?.eliminar === true;
+
   if (!user || !puedeGestionarUsuarios) {
     return (
       <Container maxWidth="md">
@@ -446,15 +452,17 @@ const Usuarios = () => {
       <Box sx={{ my: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h5">Usuarios</Typography>
-          <Tooltip title="Crear un nuevo usuario para esta empresa">
-            <Button
-              variant="contained"
-              startIcon={<FaPlus />}
-              onClick={() => handleOpenModal(null)}
-            >
-              Nuevo usuario
-            </Button>
-          </Tooltip>
+          {puedeCrearUsuario && (
+            <Tooltip title="Crear un nuevo usuario para esta empresa">
+              <Button
+                variant="contained"
+                startIcon={<FaPlus />}
+                onClick={() => handleOpenModal(null)}
+              >
+                Nuevo usuario
+              </Button>
+            </Tooltip>
+          )}
         </Box>
 
         <Paper>
@@ -497,38 +505,42 @@ const Usuarios = () => {
                         />
                       </TableCell>
                       <TableCell align="right">
-                        <Tooltip
-                          title={
-                            u.esAdminPrincipal
-                              ? 'Editar datos del administrador principal (rol y estado bloqueados)'
-                              : 'Editar datos y rol del usuario'
-                          }
-                        >
-                          <IconButton
-                            color="primary"
-                            onClick={() => handleOpenModal(u)}
-                            sx={{ mr: 1 }}
+                        {puedeEditarUsuario && (
+                          <Tooltip
+                            title={
+                              u.esAdminPrincipal
+                                ? 'Editar datos del administrador principal (rol y estado bloqueados)'
+                                : 'Editar datos y rol del usuario'
+                            }
                           >
-                            <FaEdit />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip
-                          title={
-                            u.esAdminPrincipal
-                              ? 'No se puede desactivar el administrador principal'
-                              : 'Desactivar usuario (no se eliminara definitivamente)'
-                          }
-                        >
-                          <span>
                             <IconButton
-                              color="error"
-                              onClick={() => handleDelete(u._id)}
-                              disabled={u.esAdminPrincipal}
+                              color="primary"
+                              onClick={() => handleOpenModal(u)}
+                              sx={{ mr: 1 }}
                             >
-                              <FaTrash />
+                              <FaEdit />
                             </IconButton>
-                          </span>
-                        </Tooltip>
+                          </Tooltip>
+                        )}
+                        {puedeEliminarUsuario && (
+                          <Tooltip
+                            title={
+                              u.esAdminPrincipal
+                                ? 'No se puede desactivar el administrador principal'
+                                : 'Desactivar usuario (no se eliminara definitivamente)'
+                            }
+                          >
+                            <span>
+                              <IconButton
+                                color="error"
+                                onClick={() => handleDelete(u._id)}
+                                disabled={u.esAdminPrincipal}
+                              >
+                                <FaTrash />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

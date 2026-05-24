@@ -242,6 +242,12 @@ const Roles = () => {
     user?.rol_id?.permisos?.roles?.ver === true ||
     user?.permisos?.roles?.ver === true;
 
+  // Permisos granulares — determinan visibilidad de cada botón de acción
+  const esAdminTotal = user?.rol === 'admin' || user?.rol === 'superadmin' || user?.esAdminPrincipal;
+  const puedeCrearRol   = esAdminTotal || user?.rol_id?.permisos?.roles?.crear   === true || user?.permisos?.roles?.crear   === true;
+  const puedeEditarRol  = esAdminTotal || user?.rol_id?.permisos?.roles?.editar  === true || user?.permisos?.roles?.editar  === true;
+  const puedeEliminarRol = esAdminTotal || user?.rol_id?.permisos?.roles?.eliminar === true || user?.permisos?.roles?.eliminar === true;
+
   if (!user || !puedeGestionarRoles) {
     return (
       <Container maxWidth="md">
@@ -257,11 +263,13 @@ const Roles = () => {
       <Box sx={{ my: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h5">Roles</Typography>
-          <Tooltip title="Crear un nuevo rol para esta empresa">
-            <Button variant="contained" startIcon={<FaPlus />} onClick={() => handleOpenModal(null)}>
-              Nuevo rol
-            </Button>
-          </Tooltip>
+          {puedeCrearRol && (
+            <Tooltip title="Crear un nuevo rol para esta empresa">
+              <Button variant="contained" startIcon={<FaPlus />} onClick={() => handleOpenModal(null)}>
+                Nuevo rol
+              </Button>
+            </Tooltip>
+          )}
         </Box>
 
         <Paper>
@@ -303,18 +311,22 @@ const Roles = () => {
                         )}
                       </TableCell>
                       <TableCell align="right">
-                        <Tooltip title="Editar rol y permisos">
-                          <IconButton color="primary" onClick={() => handleOpenModal(r)} sx={{ mr: 1 }}>
-                            <FaEdit />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title={r.esPredeterminado ? 'No se puede eliminar un rol predeterminado' : 'Eliminar rol'}>
-                          <span>
-                            <IconButton color="error" onClick={() => handleDelete(r._id)} disabled={r.esPredeterminado}>
-                              <FaTrash />
+                        {puedeEditarRol && (
+                          <Tooltip title="Editar rol y permisos">
+                            <IconButton color="primary" onClick={() => handleOpenModal(r)} sx={{ mr: 1 }}>
+                              <FaEdit />
                             </IconButton>
-                          </span>
-                        </Tooltip>
+                          </Tooltip>
+                        )}
+                        {puedeEliminarRol && (
+                          <Tooltip title={r.esPredeterminado ? 'No se puede eliminar un rol predeterminado' : 'Eliminar rol'}>
+                            <span>
+                              <IconButton color="error" onClick={() => handleDelete(r._id)} disabled={r.esPredeterminado}>
+                                <FaTrash />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

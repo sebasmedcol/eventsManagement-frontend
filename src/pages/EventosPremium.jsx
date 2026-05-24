@@ -31,6 +31,7 @@ import {
 } from '@mui/material';
 import { FaPlus, FaEdit, FaTrash, FaCogs } from 'react-icons/fa';
 import AuthContext from '../context/AuthContext';
+import { usePlan } from '../context/planContext';
 import api from '../services/api';
 import {
   fetchEventosPremium,
@@ -40,15 +41,14 @@ import {
   fetchUsuariosEmpresaPremiumEventos,
 } from '../services/eventoService';
 
-const PLANES_PREMIUM = ['premium', 'super'];
-
 const EventosPremium = () => {
   const { user } = useContext(AuthContext);
+  const { canAccessModule } = usePlan();
   const navigate = useNavigate();
 
-  const planEmpresa =
-    user?.empresa && typeof user.empresa === 'object' ? user.empresa.plan : '';
-  const hasPremium = user?.rol === 'superadmin' || PLANES_PREMIUM.includes(planEmpresa);
+  // Usa plansConfig como única fuente de verdad.
+  // free_trial tiene eventosPremium: true, por lo que este check lo permite.
+  const hasPremium = canAccessModule('eventosPremium');
 
   const [loading, setLoading] = useState(true);
   const [eventos, setEventos] = useState([]);
