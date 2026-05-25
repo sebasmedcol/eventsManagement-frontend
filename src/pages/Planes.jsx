@@ -35,6 +35,30 @@ import {
   LocalOffer as OfferIcon,
 } from '@mui/icons-material';
 
+const EXCLUDED_MODULES = [
+  'reportes',
+  'reportes avanzados',
+  'integraciones',
+  'acceso api',
+  'respaldos',
+  'auditoria',
+  'logistica avanzada',
+  'seguimiento de tareas',
+  'estadisticas avanzadas',
+];
+
+const normalizeStr = (str) =>
+  (str || '')
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+const filterModulos = (modulos) =>
+  (modulos || []).filter(
+    (m) => !EXCLUDED_MODULES.includes(normalizeStr(m.nombre))
+  );
+
 const Planes = () => {
   const theme = useTheme();
   const { currentPlan, refreshPlanInfo, isTrialExpired, getTrialDaysRemaining, trialInfo } = usePlan();
@@ -323,7 +347,7 @@ const Planes = () => {
                       Modulos:
                     </Typography>
                     <List dense>
-                      {plan.modulos?.slice(0, 5).map((modulo) => (
+                      {filterModulos(plan.modulos).slice(0, 5).map((modulo) => (
                         <ListItem key={modulo.id} sx={{ py: 0.25 }}>
                           <ListItemIcon sx={{ minWidth: 28 }}>
                             {modulo.disponible ? (
@@ -423,7 +447,7 @@ const Planes = () => {
               <Box sx={{ p: 2, bgcolor: 'grey.100', fontWeight: 'bold' }}>
                 Modulos Disponibles
               </Box>
-              {sortedPlanes[0]?.modulos?.map((moduloRef) => (
+              {filterModulos(sortedPlanes[0]?.modulos).map((moduloRef) => (
                 <Box key={moduloRef.id} sx={{ display: 'flex', borderBottom: 1, borderColor: 'divider' }}>
                   <Box sx={{ width: 200, p: 2 }}>{moduloRef.nombre}</Box>
                   {sortedPlanes.map((plan) => {
@@ -453,20 +477,7 @@ const Planes = () => {
         </Paper>
       )}
 
-      {/* Seccion de contacto */}
-      <Box sx={{ mt: 6, textAlign: 'center' }}>
-        <Paper sx={{ p: 4, bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
-          <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold' }}>
-            Necesitas un plan personalizado?
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            Contacta a nuestro equipo de ventas para obtener una solucion a medida para tu empresa.
-          </Typography>
-          <Button variant="contained" color="primary" size="large">
-            Contactar Ventas
-          </Button>
-        </Paper>
-      </Box>
+
     </Container>
   );
 };
