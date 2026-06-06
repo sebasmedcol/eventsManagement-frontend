@@ -32,6 +32,7 @@ import {
 import { FaPlus, FaEdit, FaTrash, FaCogs } from 'react-icons/fa';
 import AuthContext from '../context/AuthContext';
 import { usePlan } from '../context/planContext';
+import { TrialExpiredBanner } from '../components/plan';
 import api from '../services/api';
 import {
   fetchEventosPremium,
@@ -43,12 +44,13 @@ import {
 
 const EventosPremium = () => {
   const { user } = useContext(AuthContext);
-  const { canAccessModule } = usePlan();
+  const { canAccessModule, isReadOnlyMode } = usePlan();
   const navigate = useNavigate();
 
   // Usa plansConfig como única fuente de verdad.
   // free_trial tiene eventosPremium: true, por lo que este check lo permite.
   const hasPremium = canAccessModule('eventosPremium');
+  const readOnly = isReadOnlyMode();
 
   const [loading, setLoading] = useState(true);
   const [eventos, setEventos] = useState([]);
@@ -94,12 +96,12 @@ const EventosPremium = () => {
   }, []);
 
   useEffect(() => {
-    if (!hasPremium) {
+    if (!hasPremium && !readOnly) {
       setLoading(false);
       return;
     }
     loadData();
-  }, [hasPremium, loadData]);
+  }, [hasPremium, readOnly, loadData]);
 
   const openCreate = () => {
     setEditing(null);
@@ -208,7 +210,7 @@ const EventosPremium = () => {
     return new Date(value).toLocaleDateString('es-CO');
   };
 
-  if (!hasPremium) {
+  if (!hasPremium && !readOnly) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Alert severity="warning">
@@ -228,13 +230,18 @@ const EventosPremium = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
+      {/* Banner de trial expirado — modo solo lectura */}
+      <TrialExpiredBanner />
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
           Eventos (Premium)
         </Typography>
-        <Button variant="contained" startIcon={<FaPlus />} onClick={openCreate}>
-          Nuevo evento
-        </Button>
+        {!readOnly && (
+          <Button variant="contained" startIcon={<FaPlus />} onClick={openCreate}>
+            Nuevo evento
+          </Button>
+        )}
       </Box>
 
       <Paper sx={{ p: 2 }}>
@@ -300,14 +307,18 @@ const EventosPremium = () => {
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Editar">
-                      <IconButton color="secondary" onClick={() => openEdit(e)}>
-                        <FaEdit />
-                      </IconButton>
+                      {!readOnly ? (
+                        <IconButton color="secondary" onClick={() => openEdit(e)}>
+                          <FaEdit />
+                        </IconButton>
+                      ) : <span />}
                     </Tooltip>
                     <Tooltip title="Eliminar">
-                      <IconButton color="error" onClick={() => handleDelete(e)}>
-                        <FaTrash />
-                      </IconButton>
+                      {!readOnly ? (
+                        <IconButton color="error" onClick={() => handleDelete(e)}>
+                          <FaTrash />
+                        </IconButton>
+                      ) : <span />}
                     </Tooltip>
                   </TableCell>
                 </TableRow>

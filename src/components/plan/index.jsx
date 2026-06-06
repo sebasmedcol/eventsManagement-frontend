@@ -5,6 +5,7 @@ export {
   LimitedButton,
   UsageIndicator,
   TrialBanner,
+  TrialExpiredBanner,
   UpgradeRecommendation,
   PlanInfoTooltip,
   LockedIcon,

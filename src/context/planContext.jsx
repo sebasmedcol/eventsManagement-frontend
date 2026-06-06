@@ -170,6 +170,13 @@ export const PlanProvider = ({ children }) => {
   }, [planInfo]);
 
   /**
+   * Modo solo lectura: trial expirado → el usuario puede VER pero no crear/editar/eliminar
+   */
+  const isReadOnlyMode = useCallback(() => {
+    return isTrialExpired();
+  }, [isTrialExpired]);
+
+  /**
    * Obtiene los dias restantes del trial
    */
   const getTrialDaysRemaining = useCallback(() => {
@@ -238,6 +245,7 @@ export const PlanProvider = ({ children }) => {
     // Trial
     isTrialActive,
     isTrialExpired,
+    isReadOnlyMode,
     getTrialDaysRemaining,
     trialInfo: planInfo?.trial || null,
     

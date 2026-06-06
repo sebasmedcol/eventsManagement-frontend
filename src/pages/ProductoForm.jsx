@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaSave, FaArrowLeft } from 'react-icons/fa';
 import api from '../services/api';
 import { toast } from 'react-toastify';
+import { usePlan } from '../context/PlanContext';
 import {
   Box,
   Typography,
@@ -23,6 +24,7 @@ import {
 const ProductoForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isReadOnlyMode } = usePlan();
   const isEditMode = !!id;
 
   const [formData, setFormData] = useState({
@@ -140,6 +142,13 @@ const handleChange = (e) => {
       setSubmitting(false);
     }
   };
+
+  // Bloquear acceso al formulario en modo solo lectura (trial expirado)
+  if (isReadOnlyMode()) {
+    toast.warning('Tu periodo de prueba ha expirado. No puedes crear ni editar productos.');
+    navigate('/productos');
+    return null;
+  }
 
   if (loading) {
     return (

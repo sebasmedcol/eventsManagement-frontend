@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FaSave, FaArrowLeft, FaPlus, FaTrash } from 'react-icons/fa';
 import api from '../services/api';
 import { toast } from 'react-toastify';
+import { usePlan } from '../context/PlanContext';
 import {
   Box,
   Typography,
@@ -35,6 +36,7 @@ const VentaForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isReadOnlyMode } = usePlan();
   const isEditMode = !!id;
   const fromCotizacionId = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -652,6 +654,13 @@ const mostrarFechaLimite = estadoPagoEfectivo === 'pendiente' || estadoPagoEfect
 const estadoPagoEditable =
   formData.estadoPago === 'pago_completo' ||
   (formData.abono === 0 && saldoPendienteActual > 0);
+
+  // Bloquear acceso al formulario en modo solo lectura (trial expirado)
+  if (isReadOnlyMode()) {
+    toast.warning('Tu periodo de prueba ha expirado. No puedes crear ni editar ventas.');
+    navigate('/ventas');
+    return null;
+  }
 
   if (loading) {
     return (

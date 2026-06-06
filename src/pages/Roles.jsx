@@ -12,6 +12,7 @@ import {
 import Checkbox from '@mui/material/Checkbox';
 import AuthContext from '../context/AuthContext';
 import { usePlan } from '../context/planContext';
+import { TrialExpiredBanner } from '../components/plan';
 import { getRoles, createRol, updateRol, deleteRol } from '../services/rolService';
 
 /**
@@ -67,7 +68,8 @@ const normalizarPermisosUI = (input, modulos) => {
 
 const Roles = () => {
   const { user }    = useContext(AuthContext);
-  const { canAccessModule, planInfo } = usePlan();
+  const { canAccessModule, planInfo, isReadOnlyMode } = usePlan();
+  const readOnly = isReadOnlyMode();
 
   const isSuperAdmin = user?.rol === 'superadmin';
 
@@ -261,9 +263,12 @@ const Roles = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ my: 3 }}>
+        {/* Banner de trial expirado — modo solo lectura */}
+        <TrialExpiredBanner />
+
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h5">Roles</Typography>
-          {puedeCrearRol && (
+          {!readOnly && puedeCrearRol && (
             <Tooltip title="Crear un nuevo rol para esta empresa">
               <Button variant="contained" startIcon={<FaPlus />} onClick={() => handleOpenModal(null)}>
                 Nuevo rol
@@ -311,14 +316,14 @@ const Roles = () => {
                         )}
                       </TableCell>
                       <TableCell align="right">
-                        {puedeEditarRol && (
+                        {!readOnly && puedeEditarRol && (
                           <Tooltip title="Editar rol y permisos">
                             <IconButton color="primary" onClick={() => handleOpenModal(r)} sx={{ mr: 1 }}>
                               <FaEdit />
                             </IconButton>
                           </Tooltip>
                         )}
-                        {puedeEliminarRol && (
+                        {!readOnly && puedeEliminarRol && (
                           <Tooltip title={r.esPredeterminado ? 'No se puede eliminar un rol predeterminado' : 'Eliminar rol'}>
                             <span>
                               <IconButton color="error" onClick={() => handleDelete(r._id)} disabled={r.esPredeterminado}>

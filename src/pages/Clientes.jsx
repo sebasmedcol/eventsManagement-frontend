@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import api from '../services/api';
 import usePermisos from '../hooks/usePermisos';
 import { usePlan } from '../context/PlanContext';
-import { LimitedButton, UsageIndicator, PlanRestricted, UpgradeRecommendation } from '../components/plan';
+import { LimitedButton, UsageIndicator, PlanRestricted, UpgradeRecommendation, TrialExpiredBanner } from '../components/plan';
 import {
   Box,
   Typography,
@@ -38,7 +38,7 @@ import {
 
 const Clientes = () => {
   const { puedeCrear, puedeEditar, puedeEliminar } = usePermisos();
-  const { checkLimit, refreshPlanInfo, canAccessModule, shouldRecommendUpgrade } = usePlan();
+  const { checkLimit, refreshPlanInfo, canAccessModule, shouldRecommendUpgrade, isReadOnlyMode } = usePlan();
   const indicativos = ['+57', '+1', '+34', '+52', '+54', '+56', '+51', '+55'];
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,13 +62,15 @@ const Clientes = () => {
 
   // Verificar acceso al modulo
   const hasModuleAccess = canAccessModule('clientes');
+  const readOnly = isReadOnlyMode(); // trial expirado → solo lectura
   const limitInfo = checkLimit('clientes');
 
   useEffect(() => {
-    if (hasModuleAccess) {
+    // Cargar datos siempre: tanto si el acceso es completo como si es solo lectura
+    if (hasModuleAccess || readOnly) {
       fetchClientes();
     }
-  }, [hasModuleAccess]);
+  }, [hasModuleAccess, readOnly]);
 
   const fetchClientes = async () => {
     try {
@@ -303,8 +305,8 @@ const Clientes = () => {
     setCurrentPage(1);
   };
 
-  // Si el modulo no esta disponible, mostrar mensaje de restriccion
-  if (!hasModuleAccess) {
+  // Si el modulo no esta disponible (y no es trial expirado), mostrar mensaje de restriccion
+  if (!hasModuleAccess && !readOnly) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <PlanRestricted moduleName="clientes" />
@@ -329,6 +331,9 @@ const Clientes = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Banner de trial expirado — modo solo lectura */}
+      <TrialExpiredBanner />
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
           Modulo de Clientes
@@ -337,7 +342,8 @@ const Clientes = () => {
           {/* Indicador de uso de limite */}
           <UsageIndicator resourceType="clientes" showProgress={true} size="medium" />
           
-          {puedeCrear('clientes') && (
+          {/* Ocultar boton Crear si el trial expiro */}
+          {!readOnly && puedeCrear('clientes') && (
             <LimitedButton
               resourceType="clientes"
               onClick={() => openModal('crear')}
@@ -458,7 +464,7 @@ const Clientes = () => {
                           >
                             <FaEye />
                           </IconButton>
-                          {puedeEditar('clientes') && (
+                          {!readOnly && puedeEditar('clientes') && (
                             <IconButton
                               onClick={() => openModal('editar', cliente)}
                               color="primary"
@@ -468,7 +474,7 @@ const Clientes = () => {
                               <FaEdit />
                             </IconButton>
                           )}
-                          {puedeEliminar('clientes') && (
+                          {!readOnly && puedeEliminar('clientes') && (
                             <IconButton
                               onClick={() => openModal('eliminar', cliente)}
                               color="error"

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaSave, FaArrowLeft } from 'react-icons/fa';
 // import axios from 'axios';
 import { toast } from 'react-toastify';
+import { usePlan } from '../context/PlanContext';
 import {
   Box,
   Typography,
@@ -20,6 +21,7 @@ import api from '../services/api';
 const ClienteForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isReadOnlyMode } = usePlan();
   const isEditMode = !!id;
 
   const [formData, setFormData] = useState({
@@ -87,6 +89,13 @@ const ClienteForm = () => {
       setSubmitting(false);
     }
   };
+
+  // Bloquear acceso al formulario en modo solo lectura (trial expirado)
+  if (isReadOnlyMode()) {
+    toast.warning('Tu periodo de prueba ha expirado. No puedes crear ni editar clientes.');
+    navigate('/clientes');
+    return null;
+  }
 
   if (loading) {
     return (

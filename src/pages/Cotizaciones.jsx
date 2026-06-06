@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { FaPlus, FaExchangeAlt, FaEye, FaEdit, FaPrint } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import usePermisos from '../hooks/usePermisos';
+import { usePlan } from '../context/PlanContext';
+import { TrialExpiredBanner } from '../components/plan';
 import {
   Box,
   Typography,
@@ -40,6 +42,8 @@ import {
 
 const Cotizaciones = () => {
   const { puedeCrear, puedeEditar } = usePermisos();
+  const { isReadOnlyMode } = usePlan();
+  const readOnly = isReadOnlyMode();
   const [cotizaciones, setCotizaciones] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [productos, setProductos] = useState([]);
@@ -293,17 +297,22 @@ const Cotizaciones = () => {
   return (
     <Container maxWidth="xl">
       <Box sx={{ my: 3 }}>
+        {/* Banner de trial expirado — modo solo lectura */}
+        <TrialExpiredBanner />
+
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h5">Cotizaciones</Typography>
-          <Tooltip title="Crear una nueva cotización a partir de cliente y productos">
-            <Button
-              variant="contained"
-              startIcon={<FaPlus />}
-              onClick={handleOpenNueva}
-            >
-              Nueva cotización
-            </Button>
-          </Tooltip>
+          {!readOnly && (
+            <Tooltip title="Crear una nueva cotización a partir de cliente y productos">
+              <Button
+                variant="contained"
+                startIcon={<FaPlus />}
+                onClick={handleOpenNueva}
+              >
+                Nueva cotización
+              </Button>
+            </Tooltip>
+          )}
         </Box>
 
         <Paper>
@@ -375,26 +384,34 @@ const Cotizaciones = () => {
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Editar cotización">
-                          <IconButton
-                            color="secondary"
-                            onClick={() => handleOpenNueva(c)}
-                            sx={{ mr: 1 }}
-                          >
-                            <FaEdit />
-                          </IconButton>
+                          <span>
+                            {!readOnly && (
+                              <IconButton
+                                color="secondary"
+                                onClick={() => handleOpenNueva(c)}
+                                sx={{ mr: 1 }}
+                              >
+                                <FaEdit />
+                              </IconButton>
+                            )}
+                          </span>
                         </Tooltip>
                         <Tooltip title="Convertir esta cotización en una venta con consecutivo">
-                          <IconButton
-                            color="primary"
-                            onClick={() =>
-                              navigate(`/ventas/nueva?fromCotizacion=${c._id}`, {
-                                state: { fromCotizacion: c },
-                              })
-                            }
-                            sx={{ mr: 1 }}
-                          >
-                            <FaExchangeAlt />
-                          </IconButton>
+                          <span>
+                            {!readOnly && (
+                              <IconButton
+                                color="primary"
+                                onClick={() =>
+                                  navigate(`/ventas/nueva?fromCotizacion=${c._id}`, {
+                                    state: { fromCotizacion: c },
+                                  })
+                                }
+                                sx={{ mr: 1 }}
+                              >
+                                <FaExchangeAlt />
+                              </IconButton>
+                            )}
+                          </span>
                         </Tooltip>
                         <Tooltip title="Imprimir cotización">
                           <IconButton

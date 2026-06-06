@@ -46,6 +46,8 @@ import {
   FaUndoAlt,
 } from 'react-icons/fa';
 import AuthContext from '../context/AuthContext';
+import { usePlan } from '../context/planContext';
+import { TrialExpiredBanner } from '../components/plan';
 import api from '../services/api';
 import {
   fetchEventoPremiumById,
@@ -76,6 +78,8 @@ const PLANES_PREMIUM = ['premium', 'super'];
 const GestionEventoPremium = () => {
   const theme = useTheme();
   const { user } = useContext(AuthContext);
+  const { isReadOnlyMode } = usePlan();
+  const readOnly = isReadOnlyMode();
   const location = useLocation();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -650,6 +654,9 @@ const GestionEventoPremium = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
+      {/* Banner de trial expirado — modo solo lectura */}
+      <TrialExpiredBanner />
+
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
         <Button startIcon={<FaArrowLeft />} variant="outlined" onClick={attemptLeavePage}>
           Volver
@@ -662,9 +669,11 @@ const GestionEventoPremium = () => {
             {evento?.nombre || ''} — {evento?.cliente?.nombreCompleto || ''}
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<FaPlus />} onClick={openFichaCreate}>
-          Nueva ficha
-        </Button>
+        {!readOnly && (
+          <Button variant="contained" startIcon={<FaPlus />} onClick={openFichaCreate}>
+            Nueva ficha
+          </Button>
+        )}
       </Box>
 
       <Grid container spacing={2}>
@@ -746,14 +755,18 @@ const GestionEventoPremium = () => {
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Editar">
-                        <IconButton size="small" onClick={() => openFichaEdit(f)}>
-                          <FaEdit />
-                        </IconButton>
+                        {!readOnly ? (
+                          <IconButton size="small" onClick={() => openFichaEdit(f)}>
+                            <FaEdit />
+                          </IconButton>
+                        ) : <span />}
                       </Tooltip>
                       <Tooltip title="Eliminar">
-                        <IconButton size="small" color="error" onClick={() => removeFicha(f)}>
-                          <FaTrash />
-                        </IconButton>
+                        {!readOnly ? (
+                          <IconButton size="small" color="error" onClick={() => removeFicha(f)}>
+                            <FaTrash />
+                          </IconButton>
+                        ) : <span />}
                       </Tooltip>
                     </Stack>
                   </Box>
@@ -1084,27 +1097,31 @@ const GestionEventoPremium = () => {
                         <TableCell>{calcSubtotal(i.cantidad, i.precioUnitario)}</TableCell>
                         <TableCell align="right">
                           <Stack direction="row" spacing={1} justifyContent="flex-end">
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={() => saveItem(i._id)}
-                              disabled={
-                                !!productosFicha?.venta ||
-                                productosSavingAll ||
-                                !productosDirty[i._id] ||
-                                !!productosSaving[i._id]
-                              }
-                            >
-                              <FaSave />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleDeleteItem(i._id)}
-                              disabled={!!productosFicha?.venta || productosSavingAll || !!productosSaving[i._id]}
-                            >
-                              <FaTrash />
-                            </IconButton>
+                            {!readOnly && (
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                onClick={() => saveItem(i._id)}
+                                disabled={
+                                  !!productosFicha?.venta ||
+                                  productosSavingAll ||
+                                  !productosDirty[i._id] ||
+                                  !!productosSaving[i._id]
+                                }
+                              >
+                                <FaSave />
+                              </IconButton>
+                            )}
+                            {!readOnly && (
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleDeleteItem(i._id)}
+                                disabled={!!productosFicha?.venta || productosSavingAll || !!productosSaving[i._id]}
+                              >
+                                <FaTrash />
+                              </IconButton>
+                            )}
                           </Stack>
                         </TableCell>
                       </TableRow>

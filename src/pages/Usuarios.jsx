@@ -53,6 +53,8 @@ import InputAdornment from '@mui/material/InputAdornment';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import AuthContext from '../context/AuthContext';
+import { usePlan } from '../context/PlanContext';
+import { TrialExpiredBanner } from '../components/plan';
 import { getUsuarios, createUsuario, updateUsuario, deleteUsuario } from '../services/usuarioService';
 import { getRoles } from '../services/rolService';
 import api from '../services/api';
@@ -111,6 +113,8 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const Usuarios = () => {
   const { user } = useContext(AuthContext);
+  const { isReadOnlyMode } = usePlan();
+  const readOnly = isReadOnlyMode();
   const userId = user?._id;
   const userEmpresaId = user?.empresaId;
   const userRol = user?.rol;
@@ -450,9 +454,12 @@ const Usuarios = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ my: 3 }}>
+        {/* Banner de trial expirado — modo solo lectura */}
+        <TrialExpiredBanner />
+
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h5">Usuarios</Typography>
-          {puedeCrearUsuario && (
+          {!readOnly && puedeCrearUsuario && (
             <Tooltip title="Crear un nuevo usuario para esta empresa">
               <Button
                 variant="contained"
@@ -505,7 +512,7 @@ const Usuarios = () => {
                         />
                       </TableCell>
                       <TableCell align="right">
-                        {puedeEditarUsuario && (
+                        {!readOnly && puedeEditarUsuario && (
                           <Tooltip
                             title={
                               u.esAdminPrincipal
@@ -522,7 +529,7 @@ const Usuarios = () => {
                             </IconButton>
                           </Tooltip>
                         )}
-                        {puedeEliminarUsuario && (
+                        {!readOnly && puedeEliminarUsuario && (
                           <Tooltip
                             title={
                               u.esAdminPrincipal

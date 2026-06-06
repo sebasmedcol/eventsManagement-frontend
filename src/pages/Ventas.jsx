@@ -4,6 +4,8 @@ import { FaPlus, FaEdit, FaTrash, FaSearch, FaEye, FaBan } from 'react-icons/fa'
 import api from '../services/api';
 import { toast } from 'react-toastify';
 import usePermisos from '../hooks/usePermisos';
+import { usePlan } from '../context/PlanContext';
+import { TrialExpiredBanner } from '../components/plan';
 import {
   Box,
   Typography,
@@ -36,6 +38,8 @@ import {
 
 const Ventas = () => {
   const { puedeCrear, puedeEditar, puedeEliminar } = usePermisos();
+  const { isReadOnlyMode } = usePlan();
+  const readOnly = isReadOnlyMode();
   const [ventas, setVentas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -171,11 +175,14 @@ const fetchVentas = async () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Banner de trial expirado — modo solo lectura */}
+      <TrialExpiredBanner />
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
           Módulo de Ventas
         </Typography>
-        {puedeCrear('ventas') && (
+        {!readOnly && puedeCrear('ventas') && (
           <Button
             component={Link}
             to="/ventas/nueva"

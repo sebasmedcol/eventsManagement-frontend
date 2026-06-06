@@ -393,6 +393,39 @@ export const LockedIcon = ({ tooltip, size = 'small' }) => {
 /**
  * Badge que indica el plan actual
  */
+/**
+ * Banner que se muestra cuando el periodo de prueba ha expirado.
+ * Avisa al usuario que está en modo solo lectura y lo invita a seleccionar un plan.
+ */
+export const TrialExpiredBanner = () => {
+  const { isTrialExpired } = usePlan();
+
+  if (!isTrialExpired()) return null;
+
+  return (
+    <Alert
+      severity="warning"
+      icon={<LockIcon />}
+      sx={{ mb: 2, borderRadius: 2 }}
+      action={
+        <Button
+          color="warning"
+          size="small"
+          variant="contained"
+          startIcon={<UpgradeIcon />}
+          href="/planes"
+        >
+          Ver planes
+        </Button>
+      }
+    >
+      <AlertTitle>Periodo de prueba expirado — Modo solo lectura</AlertTitle>
+      Tu prueba gratuita ha terminado. Puedes consultar toda tu información, pero no podrás crear, editar
+      ni eliminar registros hasta que selecciones un plan.
+    </Alert>
+  );
+};
+
 export const PlanBadge = ({ showName = true }) => {
   const { currentPlan } = usePlan();
   

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaSearch, FaEye } from 'react-icons/fa';
 import api from '../../services/api';
 import { toast } from 'react-toastify';
+import { usePlan } from '../../context/PlanContext';
+import { TrialExpiredBanner } from '../../components/plan';
 import {
   Box,
   Typography,
@@ -34,6 +36,8 @@ import {
 } from '@mui/material';
 
 const Facturas = () => {
+  const { isReadOnlyMode } = usePlan();
+  const readOnly = isReadOnlyMode();
   const [facturas, setFacturas] = useState([]);
   const [consecutivos, setConsecutivos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -260,19 +264,24 @@ const Facturas = () => {
 
   return (
     <Container maxWidth={false} disableGutters sx={{ py: 2, pl: 6, pr: 5 }}>
+      {/* Banner de trial expirado — modo solo lectura */}
+      <TrialExpiredBanner />
+
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
           Módulo de Facturas
         </Typography>
-        <Button
-          onClick={() => openModal('crear')}
-          variant="contained"
-          color="primary"
-          startIcon={<FaPlus />}
-        >
-          Crear Factura
-        </Button>
+        {!readOnly && (
+          <Button
+            onClick={() => openModal('crear')}
+            variant="contained"
+            color="primary"
+            startIcon={<FaPlus />}
+          >
+            Crear Factura
+          </Button>
+        )}
       </Box>
 
       {/* Controles de búsqueda y paginación */}
@@ -375,22 +384,26 @@ const Facturas = () => {
                           >
                             <FaEye />
                           </IconButton>
-                          <IconButton
-                            onClick={() => openModal('editar', factura)}
-                            color="primary"
-                            size="small"
-                            title="Editar"
-                          >
-                            <FaEdit />
-                          </IconButton>
-                          <IconButton
-                            onClick={() => openModal('eliminar', factura)}
-                            color="error"
-                            size="small"
-                            title="Eliminar"
-                          >
-                            <FaTrash />
-                          </IconButton>
+                          {!readOnly && (
+                            <IconButton
+                              onClick={() => openModal('editar', factura)}
+                              color="primary"
+                              size="small"
+                              title="Editar"
+                            >
+                              <FaEdit />
+                            </IconButton>
+                          )}
+                          {!readOnly && (
+                            <IconButton
+                              onClick={() => openModal('eliminar', factura)}
+                              color="error"
+                              size="small"
+                              title="Eliminar"
+                            >
+                              <FaTrash />
+                            </IconButton>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaEdit, FaPrint } from 'react-icons/fa';
 import api from '../services/api';
 import { toast } from 'react-toastify';
+import { usePlan } from '../context/PlanContext';
 import {
   Box,
   Typography,
@@ -44,6 +45,8 @@ const buildLogoDataUrl = (logo) => {
 const VentaDetalle = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isReadOnlyMode } = usePlan();
+  const readOnly = isReadOnlyMode();
   const [venta, setVenta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState(() => readStoredConfig());
@@ -151,14 +154,16 @@ const VentaDetalle = () => {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            onClick={() => navigate(`/ventas/editar/${venta._id}`)}
-            variant="contained"
-            color="primary"
-            startIcon={<FaEdit />}
-          >
-            Editar
-          </Button>
+          {!readOnly && (
+            <Button
+              onClick={() => navigate(`/ventas/editar/${venta._id}`)}
+              variant="contained"
+              color="primary"
+              startIcon={<FaEdit />}
+            >
+              Editar
+            </Button>
+          )}
           <Button
             onClick={handlePrint}
             variant="contained"

@@ -3,6 +3,8 @@ import { FaPlus, FaEdit, FaTrash, FaSearch, FaEye } from 'react-icons/fa';
 import api from '../../services/api';
 import { toast } from 'react-toastify';
 import usePermisos from '../../hooks/usePermisos';
+import { usePlan } from '../../context/PlanContext';
+import { TrialExpiredBanner } from '../../components/plan';
 import {
   Box,
   Typography,
@@ -35,6 +37,8 @@ import {
 
 const Consecutivos = () => {
   const { puedeCrear, puedeEditar, puedeEliminar } = usePermisos();
+  const { isReadOnlyMode } = usePlan();
+  const readOnly = isReadOnlyMode();
   const [consecutivos, setConsecutivos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -197,19 +201,24 @@ const Consecutivos = () => {
 
   return (
     <Container maxWidth={false} disableGutters sx={{ py: 2, pl: 6, pr: 5 }}>
+      {/* Banner de trial expirado — modo solo lectura */}
+      <TrialExpiredBanner />
+
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
           Módulo de Consecutivos
         </Typography>
-        <Button
-          onClick={() => openModal('crear')}
-          variant="contained"
-          color="primary"
-          startIcon={<FaPlus />}
-        >
-          Crear Consecutivo
-        </Button>
+        {!readOnly && (
+          <Button
+            onClick={() => openModal('crear')}
+            variant="contained"
+            color="primary"
+            startIcon={<FaPlus />}
+          >
+            Crear Consecutivo
+          </Button>
+        )}
       </Box>
 
       {/* Controles de búsqueda y paginación */}
@@ -306,22 +315,26 @@ const Consecutivos = () => {
                           >
                             <FaEye />
                           </IconButton>
-                          <IconButton
-                            onClick={() => openModal('editar', consecutivo)}
-                            color="primary"
-                            size="small"
-                            title="Editar"
-                          >
-                            <FaEdit />
-                          </IconButton>
-                          <IconButton
-                            onClick={() => openModal('eliminar', consecutivo)}
-                            color="error"
-                            size="small"
-                            title="Eliminar"
-                          >
-                            <FaTrash />
-                          </IconButton>
+                          {!readOnly && (
+                            <IconButton
+                              onClick={() => openModal('editar', consecutivo)}
+                              color="primary"
+                              size="small"
+                              title="Editar"
+                            >
+                              <FaEdit />
+                            </IconButton>
+                          )}
+                          {!readOnly && (
+                            <IconButton
+                              onClick={() => openModal('eliminar', consecutivo)}
+                              color="error"
+                              size="small"
+                              title="Eliminar"
+                            >
+                              <FaTrash />
+                            </IconButton>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>

@@ -4,6 +4,8 @@ import { FaPlus, FaEdit, FaTrash, FaSearch, FaEye } from 'react-icons/fa';
 import api from '../services/api';
 import { toast } from 'react-toastify';
 import usePermisos from '../hooks/usePermisos';
+import { usePlan } from '../context/PlanContext';
+import { TrialExpiredBanner } from '../components/plan';
 import {
   Box,
   Typography,
@@ -36,6 +38,8 @@ import {
 
 const Productos = () => {
   const { puedeCrear, puedeEditar, puedeEliminar } = usePermisos();
+  const { isReadOnlyMode } = usePlan();
+  const readOnly = isReadOnlyMode();
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -268,11 +272,14 @@ const filteredProductos = productos.filter(producto =>
 
   return (
     <Container maxWidth={false} disableGutters sx={{ py: 2, pl: 6, pr: 5 }}>
+      {/* Banner de trial expirado — modo solo lectura */}
+      <TrialExpiredBanner />
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
           Módulo de Productos
         </Typography>
-        {puedeCrear('productos') && (
+        {!readOnly && puedeCrear('productos') && (
           <Button
             onClick={() => openModal('crear')}
             variant="contained"
@@ -399,7 +406,7 @@ const filteredProductos = productos.filter(producto =>
                           >
                             <FaEye />
                           </IconButton>
-                          {puedeEditar('productos') && (
+                          {!readOnly && puedeEditar('productos') && (
                             <IconButton
                               onClick={() => openModal('editar', producto)}
                               color="primary"
@@ -409,7 +416,7 @@ const filteredProductos = productos.filter(producto =>
                               <FaEdit />
                             </IconButton>
                           )}
-                          {puedeEliminar('productos') && (
+                          {!readOnly && puedeEliminar('productos') && (
                             <IconButton
                               onClick={() => openModal('eliminar', producto)}
                               color="error"
