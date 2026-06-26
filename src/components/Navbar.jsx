@@ -38,8 +38,12 @@ import MenuIcon from '@mui/icons-material/Menu';
 import Sidebar from './Sidebar';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
+import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
+import PaletteIcon from '@mui/icons-material/Palette';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import CircularProgress from '@mui/material/CircularProgress';
+import ThemePicker from './ThemePicker';
+import { useAppTheme } from '../context/ThemeContext';
 import { getEmpresasAdmin } from '../services/empresaAdminService';
 import { fetchNotificacionesEventosPremium, marcarNotificacionEventosPremiumLeida } from '../services/eventoService';
 
@@ -73,8 +77,9 @@ const getUserIconComponent = (user) => {
   return map[key] || FaUser;
 };
 
-const Navbar = ({ onToggleColorMode, mode, sidebarCollapsed, onToggleSidebarCollapsed }) => {
+const Navbar = ({ sidebarCollapsed, onToggleSidebarCollapsed }) => {
   const { user, logout } = useContext(AuthContext);
+  const { resolvedMode, colorMode, setColorMode } = useAppTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -82,8 +87,17 @@ const Navbar = ({ onToggleColorMode, mode, sidebarCollapsed, onToggleSidebarColl
   const [eventosNotif, setEventosNotif] = useState([]);
   const [anchorNotif, setAnchorNotif] = useState(null);
   const [anchorUser, setAnchorUser] = useState(null);
+  const [anchorTheme, setAnchorTheme] = useState(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const lastNotifCount = useRef(0);
+
+  // Cicla entre los modos: claro → oscuro → sistema → claro.
+  const handleToggleMode = () => {
+    setColorMode(colorMode === 'light' ? 'dark' : colorMode === 'dark' ? 'system' : 'light');
+  };
+
+  const modeTooltip =
+    colorMode === 'light' ? 'Modo oscuro' : colorMode === 'dark' ? 'Modo sistema' : 'Modo claro';
 
   const isLoginPage = location.pathname === '/login';
 
@@ -284,10 +298,28 @@ const Navbar = ({ onToggleColorMode, mode, sidebarCollapsed, onToggleSidebarColl
 
           <Box sx={{ flexGrow: 1 }} />
 
-          {/* Botón para alternar tema claro/oscuro */}
-          <Tooltip title={mode === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
-            <IconButton color="inherit" onClick={onToggleColorMode} sx={{ mr: 1 }}>
-              {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+          {/* Selector rápido de tema de color */}
+          <Tooltip title="Cambiar tema">
+            <IconButton
+              color="inherit"
+              onClick={(e) => setAnchorTheme(e.currentTarget)}
+              sx={{ mr: 1 }}
+            >
+              <PaletteIcon />
+            </IconButton>
+          </Tooltip>
+          <ThemePicker anchorEl={anchorTheme} onClose={() => setAnchorTheme(null)} />
+
+          {/* Botón para alternar el modo de color (claro → oscuro → sistema) */}
+          <Tooltip title={modeTooltip}>
+            <IconButton color="inherit" onClick={handleToggleMode} sx={{ mr: 1 }}>
+              {colorMode === 'system' ? (
+                <SettingsSuggestIcon />
+              ) : resolvedMode === 'dark' ? (
+                <LightModeIcon />
+              ) : (
+                <DarkModeIcon />
+              )}
             </IconButton>
           </Tooltip>
 

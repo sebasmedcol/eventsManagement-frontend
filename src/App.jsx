@@ -3,6 +3,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider } from './context/AuthContext';
 import { PlanProvider } from './context/PlanContext';
+import { ThemeContextProvider, useAppTheme } from './context/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import PermanentSidebar from './components/PermanentSidebar';
@@ -38,103 +39,108 @@ import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import Configuraciones from './pages/Configuraciones';
 import Planes from './pages/Planes';
 
-// Design tokens inspired by a modern admin template
-const getDesignTokens = (mode) => ({
-  palette: {
-    mode,
-    primary: { main: '#5D87FF', light: '#7AA4FF', dark: '#2F5BFF', contrastText: '#fff' },
-    secondary: { main: '#8A5DFF', light: '#A186FF', dark: '#6B35FF', contrastText: '#170B36' },
-    success: { main: '#13DEB9', light: '#4EE8CE', dark: '#0FB597', contrastText: '#003B32' },
-    warning: { main: '#FFAE1F', light: '#FFC462', dark: '#E08D00', contrastText: '#3D2B00' },
-    error:   { main: '#FA896B', light: '#FFB09C', dark: '#E76B49', contrastText: '#3E120B' },
-    info:    { main: '#539BFF', light: '#84B7FF', dark: '#1C6BFF', contrastText: '#0A1B3A' },
-    accent:  { main: '#49BEFF' },
-    neutral: { main: '#64748B' },
-    ...(mode === 'light'
-      ? {
-          background: { default: '#F6F9FC', paper: '#FFFFFF' },
-          text: { primary: '#111827', secondary: '#6B7280' },
-          divider: 'rgba(145, 158, 171, 0.24)'
-        }
-      : {
-          background: { default: '#0b1220', paper: '#111827' },
-          text: { primary: '#E5E7EB', secondary: '#9CA3AF' },
-          divider: 'rgba(145, 158, 171, 0.24)'
-        }),
-  },
-  shape: { borderRadius: 12 },
-  typography: {
-    fontFamily: [
-      'Inter',
-      'Roboto',
-      'Helvetica Neue',
-      'Arial',
-      'sans-serif'
-    ].join(','),
-    h1: { fontWeight: 700 },
-    h2: { fontWeight: 700 },
-    h3: { fontWeight: 700 },
-    button: { textTransform: 'none', fontWeight: 600 },
-  },
-  components: {
-    MuiAppBar: {
-      styleOverrides: {
-        root: ({ theme }) => ({
-          background: 'linear-gradient(90deg, rgba(1,62,80,0.75) 0%, rgba(251,107,18,0.5) 100%)',
-          color: '#ffffff',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          boxShadow: 'none',
-          borderBottom: '1px solid rgba(255,255,255,0.10)',
-        }),
-      },
-    },
-    MuiPaper: {
-      defaultProps: { elevation: 1 },
-      styleOverrides: {
-        root: ({ theme }) => ({
-          borderRadius: 12,
-          border: theme.palette.mode === 'light' ? '1px solid #eef2f6' : '1px solid rgba(255,255,255,0.06)'
-        }),
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: ({ theme }) => ({
-          boxShadow: theme.palette.mode === 'light' ? '0 2px 8px rgba(16,24,40,0.06)' : '0 2px 8px rgba(0,0,0,0.35)',
-        }),
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 10,
-          paddingInline: 16,
-          paddingBlock: 8,
-          boxShadow: 'none',
+// Construye el tema MUI dinámicamente a partir del tema activo (currentThemeTokens)
+// y el modo resuelto (resolvedMode), ambos provenientes del ThemeContext.
+function AppWithTheme({ children }) {
+  const { currentThemeTokens: tokens, resolvedMode: mode } = useAppTheme();
+
+  const theme = useMemo(
+    () =>
+      createTheme({
+        palette: {
+          mode,
+          primary: tokens.primary,
+          secondary: tokens.secondary,
+          success: tokens.success,
+          warning: tokens.warning,
+          error: tokens.error,
+          info: tokens.info,
+          accent: { main: '#49BEFF' },
+          neutral: { main: '#64748B' },
+          ...(mode === 'light'
+            ? {
+                background: { default: tokens.light.bgDefault, paper: tokens.light.bgPaper },
+                text: { primary: tokens.light.textPrimary, secondary: tokens.light.textSecondary },
+                divider: 'rgba(145, 158, 171, 0.24)',
+              }
+            : {
+                background: { default: tokens.dark.bgDefault, paper: tokens.dark.bgPaper },
+                text: { primary: tokens.dark.textPrimary, secondary: tokens.dark.textSecondary },
+                divider: 'rgba(145, 158, 171, 0.24)',
+              }),
         },
-        containedPrimary: {
-          boxShadow: '0 6px 16px rgba(93,135,255,0.35)',
+        shape: { borderRadius: 12 },
+        typography: {
+          fontFamily: ['Inter', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'].join(','),
+          h1: { fontWeight: 700 },
+          h2: { fontWeight: 700 },
+          h3: { fontWeight: 700 },
+          button: { textTransform: 'none', fontWeight: 600 },
         },
-        containedSecondary: {
-          boxShadow: '0 6px 16px rgba(138,93,255,0.35)',
+        components: {
+          MuiAppBar: {
+            styleOverrides: {
+              root: {
+                background: tokens.appBarGradient,
+                color: '#ffffff',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+                boxShadow: 'none',
+                borderBottom: '1px solid rgba(255,255,255,0.10)',
+              },
+            },
+          },
+          MuiPaper: {
+            defaultProps: { elevation: 1 },
+            styleOverrides: {
+              root: ({ theme }) => ({
+                borderRadius: 12,
+                border:
+                  theme.palette.mode === 'light'
+                    ? '1px solid #eef2f6'
+                    : '1px solid rgba(255,255,255,0.06)',
+              }),
+            },
+          },
+          MuiCard: {
+            styleOverrides: {
+              root: ({ theme }) => ({
+                boxShadow:
+                  theme.palette.mode === 'light'
+                    ? '0 2px 8px rgba(16,24,40,0.06)'
+                    : '0 2px 8px rgba(0,0,0,0.35)',
+              }),
+            },
+          },
+          MuiButton: {
+            styleOverrides: {
+              root: { borderRadius: 10, paddingInline: 16, paddingBlock: 8, boxShadow: 'none' },
+              containedPrimary: { boxShadow: '0 6px 16px rgba(93,135,255,0.35)' },
+              containedSecondary: { boxShadow: '0 6px 16px rgba(138,93,255,0.35)' },
+              containedSuccess: { boxShadow: '0 6px 16px rgba(19,222,185,0.35)' },
+            },
+          },
+          MuiDrawer: {
+            styleOverrides: {
+              paper: {
+                backgroundColor: mode === 'dark' ? tokens.dark.sidebarBg : tokens.light.sidebarBg,
+                color: mode === 'dark' ? tokens.dark.textPrimary : tokens.light.textPrimary,
+                backdropFilter: mode === 'dark' ? tokens.dark.sidebarBackdropFilter : 'none',
+              },
+            },
+          },
         },
-        containedSuccess: {
-          boxShadow: '0 6px 16px rgba(19,222,185,0.35)',
-        },
-      },
-    },
-    MuiDrawer: {
-      styleOverrides: {
-        paper: ({ theme }) => ({
-          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(1, 62, 80, 0.3)' : '#ffffff',
-          color: theme.palette.text.primary,
-          backdropFilter: theme.palette.mode === 'dark' ? 'blur(6px)' : 'none',
-        }),
-      },
-    },
-  },
-});
+      }),
+    [tokens, mode]
+  );
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      {children}
+    </ThemeProvider>
+  );
+}
 
 const GlobalWatermark = () => {
   const location = useLocation();
@@ -174,42 +180,28 @@ const AppContent = ({ children }) => {
 };
 
 function App() {
-  // Color mode with persistence
-  const [mode, setMode] = useState(() => {
-    const saved = localStorage.getItem('color-mode');
-    return saved === 'dark' || saved === 'light' ? saved : 'light';
-  });
-
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     return localStorage.getItem('sidebar-collapsed') === '1';
   });
 
   useEffect(() => {
-    localStorage.setItem('color-mode', mode);
-  }, [mode]);
-
-  useEffect(() => {
     localStorage.setItem('sidebar-collapsed', sidebarCollapsed ? '1' : '0');
   }, [sidebarCollapsed]);
-
-  const theme = useMemo(() => createTheme(getDesignTokens(mode)), [mode]);
 
   // Sidebar width
   const drawerWidth = 240;
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Router>
-        <AuthProvider>
-          <PlanProvider>
-            <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-              <Navbar
-                onToggleColorMode={() => setMode((p) => (p === 'light' ? 'dark' : 'light'))}
-                mode={mode}
-                sidebarCollapsed={sidebarCollapsed}
-                onToggleSidebarCollapsed={() => setSidebarCollapsed((p) => !p)}
-              />
+    <ThemeContextProvider>
+      <AppWithTheme>
+        <Router>
+          <AuthProvider>
+            <PlanProvider>
+              <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+                <Navbar
+                  sidebarCollapsed={sidebarCollapsed}
+                  onToggleSidebarCollapsed={() => setSidebarCollapsed((p) => !p)}
+                />
               <PermanentSidebar width={drawerWidth} collapsed={sidebarCollapsed} />
               <Box
                 component="main"
@@ -387,10 +379,11 @@ function App() {
               </Box>
             </Box>
             <ToastContainer position="bottom-right" />
-          </PlanProvider>
-        </AuthProvider>
-      </Router>
-    </ThemeProvider>
+            </PlanProvider>
+          </AuthProvider>
+        </Router>
+      </AppWithTheme>
+    </ThemeContextProvider>
   );
 }
 

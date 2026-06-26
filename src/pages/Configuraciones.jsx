@@ -39,6 +39,7 @@ import {
 } from 'react-icons/fa';
 import api from '../services/api';
 import AuthContext from '../context/AuthContext';
+import { useAppTheme } from '../context/ThemeContext';
 
 const STORAGE_KEY = 'ian_config';
 const INDICATIVOS_COMUNES = ['+57', '+1', '+52', '+34', '+51', '+54', '+56', '+58'];
@@ -81,6 +82,8 @@ const buildLogoDataUrl = (logo) => {
 const Configuraciones = () => {
   const { user } = useContext(AuthContext);
   const canEditEmpresa = user?.rol === 'admin' || user?.rol === 'superadmin';
+
+  const { themeId, setThemeId, colorMode, setColorMode, resolvedMode, availableThemes } = useAppTheme();
 
   const [loading, setLoading] = useState(true);
   const [savingUser, setSavingUser] = useState(false);
@@ -600,6 +603,137 @@ const Configuraciones = () => {
           </Box>
         </Paper>
       )}
+
+      {/* ── Sección Apariencia ─────────────────────────────────── */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
+          Apariencia
+        </Typography>
+
+        {/* Selector de modo */}
+        <Typography variant="subtitle2" sx={{ color: 'text.secondary', mb: 1 }}>
+          Modo de color
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
+          {[
+            { value: 'light', label: 'Claro' },
+            { value: 'dark', label: 'Oscuro' },
+            { value: 'system', label: 'Sistema' },
+          ].map(({ value, label }) => (
+            <Button
+              key={value}
+              variant={colorMode === value ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => setColorMode(value)}
+            >
+              {label}
+            </Button>
+          ))}
+        </Box>
+
+        {/* Selector de tema */}
+        <Typography variant="subtitle2" sx={{ color: 'text.secondary', mb: 1 }}>
+          Tema de color
+        </Typography>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(4, 1fr)' },
+            gap: 2,
+            mb: 3,
+          }}
+        >
+          {availableThemes.map((t) => {
+            const isActive = themeId === t.id;
+            return (
+              <Box
+                key={t.id}
+                onClick={() => setThemeId(t.id)}
+                sx={{
+                  border: isActive ? '2px solid' : '1px solid',
+                  borderColor: isActive ? 'primary.main' : 'divider',
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'border-color 0.2s, box-shadow 0.2s',
+                  '&:hover': { boxShadow: 3 },
+                  position: 'relative',
+                }}
+              >
+                {/* Previsualización del gradiente de barra */}
+                <Box
+                  sx={{
+                    height: 44,
+                    background: t.tokens.appBarGradient,
+                  }}
+                />
+                {/* Info del tema */}
+                <Box sx={{ p: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                    {t.nombre}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    {t.descripcion}
+                  </Typography>
+                  {/* Fila de swatches de colores del tema */}
+                  <Box sx={{ display: 'flex', gap: 0.5, mt: 1 }}>
+                    {[
+                      t.tokens.primary.main,
+                      t.tokens.secondary.main,
+                      t.tokens.success.main,
+                      resolvedMode === 'dark' ? t.tokens.dark.bgDefault : t.tokens.light.bgDefault,
+                    ].map((color, i) => (
+                      <Box
+                        key={i}
+                        sx={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: '50%',
+                          bgcolor: color,
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          flexShrink: 0,
+                        }}
+                      />
+                    ))}
+                  </Box>
+                </Box>
+                {/* Badge "Activo" */}
+                {isActive && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 6,
+                      right: 6,
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      px: 0.75,
+                      py: 0.25,
+                      borderRadius: 1,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    Activo
+                  </Box>
+                )}
+              </Box>
+            );
+          })}
+        </Box>
+
+        {/* Botón de confirmación con toast */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button
+            variant="contained"
+            onClick={() => toast.success('Apariencia guardada')}
+            startIcon={<FaSave />}
+          >
+            Guardar apariencia
+          </Button>
+        </Box>
+      </Paper>
     </Container>
   );
 };
