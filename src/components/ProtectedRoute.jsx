@@ -5,8 +5,11 @@ import AuthContext from '../context/AuthContext';
 const hasPerm = (user, requiredPermission) => {
   if (!requiredPermission) return true;
   if (!user) return false;
-  if (user.rol === 'superadmin' || user.rol === 'admin' || user.esAdminPrincipal) {
-    return true;
+  if (user.isOwnerSuperAdmin === true) return true;
+  if (user.isEmpresaSuperAdmin !== true) {
+    if (user.rol === 'superadmin' || user.rol === 'admin' || user.esAdminPrincipal) {
+      return true;
+    }
   }
   const { modulo, accion } = requiredPermission;
   

@@ -48,7 +48,15 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
    * La empresa es SuperAdmin cuando el usuario tiene rol 'superadmin'.
    * Esos usuarios tienen acceso total y ven módulos exclusivos.
    */
-  const isSuperAdmin = user?.rol === 'superadmin';
+  const empresaNombre =
+    user?.empresa && typeof user.empresa === 'object' ? user.empresa.nombre : '';
+  const isEmpresaSuperAdmin = empresaNombre === 'SuperAdmin';
+  const isOwnerSuperAdmin =
+    isEmpresaSuperAdmin &&
+    user?.rol === 'superadmin' &&
+    user?.esAdminPrincipal === true &&
+    user?.nombreUsuario === 'superadmin';
+  const isSuperAdmin = user?.rol === 'superadmin' && (!isEmpresaSuperAdmin || isOwnerSuperAdmin);
 
   // ── Verificación de permiso de rol (visible o no en sidebar) ─────────────
   // Bloqueado por ROL → NO aparece en sidebar en absoluto.
@@ -56,11 +64,11 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
   const canSee = (perm) => {
     if (!perm) return true;
 
-    // SuperAdmin y admin principal siempre pueden ver todo
-    if (isSuperAdmin || user.esAdminPrincipal) return true;
-
-    // Admin tiene acceso completo a módulos de su empresa
-    if (user.rol === 'admin') return true;
+    // SuperAdmin (owner) y admin principal siempre pueden ver todo
+    // EXCEPCIÓN: En la empresa "SuperAdmin" solo el owner mantiene el bypass. Los demás respetan permisos.
+    if (isSuperAdmin) return true;
+    if (!isEmpresaSuperAdmin && user.esAdminPrincipal) return true;
+    if (!isEmpresaSuperAdmin && user.rol === 'admin') return true;
 
     // Sistema de roles RBAC (rol_id con permisos)
     if (user.rol_id?.activo && user.rol_id?.permisos) {
@@ -111,7 +119,7 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
 
     // Eventos Premium — se muestra siempre que el usuario tenga permiso de rol;
     // si el plan no lo incluye, aparece en gris con candado y tooltip.
-    if (canSee('eventos')) {
+    if (canSee('eventosPremium')) {
       items.push({
         text: 'Eventos Premium',
         icon: <FaCrown />,

@@ -89,7 +89,8 @@ const Navbar = ({ sidebarCollapsed, onToggleSidebarCollapsed }) => {
   const [anchorUser, setAnchorUser] = useState(null);
   const [anchorTheme, setAnchorTheme] = useState(null);
   const [loggingOut, setLoggingOut] = useState(false);
-  const lastNotifCount = useRef(0);
+  const eventosNotifReady = useRef(false);
+  const prevEventosNotifCount = useRef(0);
 
   // Cicla entre los modos: claro → oscuro → sistema → claro.
   const handleToggleMode = () => {
@@ -104,6 +105,12 @@ const Navbar = ({ sidebarCollapsed, onToggleSidebarCollapsed }) => {
   const hasEventosVer = useMemo(() => {
     if (!user) return false;
     if (user.rol === 'admin' || user.rol === 'superadmin' || user.esAdminPrincipal) return true;
+    if (user.rol_id && user.rol_id.activo && user.rol_id.permisos) {
+      const permisosRol = user.rol_id.permisos;
+      if (permisosRol?.eventos?.ver === true) {
+        return true;
+      }
+    }
     return user?.permisos?.eventos?.ver === true;
   }, [user]);
 
@@ -163,12 +170,14 @@ const Navbar = ({ sidebarCollapsed, onToggleSidebarCollapsed }) => {
   useEffect(() => {
     if (!user) {
       setEventosNotif([]);
-      lastNotifCount.current = 0;
+      eventosNotifReady.current = false;
+      prevEventosNotifCount.current = 0;
       return;
     }
-    if (!hasPremiumPlan || !hasEventosVer) {
+    if (!(user.rol === 'superadmin' || hasPremiumPlan)) {
       setEventosNotif([]);
-      lastNotifCount.current = 0;
+      eventosNotifReady.current = false;
+      prevEventosNotifCount.current = 0;
       return;
     }
 
@@ -179,6 +188,12 @@ const Navbar = ({ sidebarCollapsed, onToggleSidebarCollapsed }) => {
         const res = await fetchNotificacionesEventosPremium();
         if (!isMounted) return;
         const data = Array.isArray(res.data) ? res.data : [];
+        const nextCount = data.length;
+        if (eventosNotifReady.current && nextCount > prevEventosNotifCount.current) {
+          toast.info('Tienes fichas asignadas en Eventos');
+        }
+        prevEventosNotifCount.current = nextCount;
+        eventosNotifReady.current = true;
         setEventosNotif(data);
       } catch {
         if (isMounted) setEventosNotif([]);
@@ -186,20 +201,12 @@ const Navbar = ({ sidebarCollapsed, onToggleSidebarCollapsed }) => {
     };
 
     cargar();
-    const id = setInterval(cargar, 30000);
+    const id = setInterval(cargar, 15000);
     return () => {
       isMounted = false;
       clearInterval(id);
     };
-  }, [user, hasPremiumPlan, hasEventosVer]);
-
-  useEffect(() => {
-    const count = (pendingEmpresas?.length || 0) + (eventosNotif?.length || 0);
-    if (count > lastNotifCount.current && lastNotifCount.current > 0 && eventosNotif.length > 0) {
-      toast.info('Tienes fichas asignadas en Eventos');
-    }
-    lastNotifCount.current = count;
-  }, [pendingEmpresas, eventosNotif]);
+  }, [user, hasPremiumPlan]);
 
   const handleOpenNotif = (event) => {
     setAnchorNotif(event.currentTarget);
@@ -325,7 +332,7 @@ const Navbar = ({ sidebarCollapsed, onToggleSidebarCollapsed }) => {
 
           {user && (
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              {(user.rol === 'superadmin' || (hasPremiumPlan && hasEventosVer)) && (
+              {(user.rol === 'superadmin' || hasPremiumPlan) && (
                 <>
                   <Tooltip title="Notificaciones">
                     <IconButton color="inherit" onClick={handleOpenNotif} sx={{ mr: 1 }}>
@@ -361,7 +368,7 @@ const Navbar = ({ sidebarCollapsed, onToggleSidebarCollapsed }) => {
                       </>
                     )}
 
-                    {hasPremiumPlan && hasEventosVer && (
+                    {(user.rol === 'superadmin' || hasPremiumPlan) && (
                       <>
                         {user.rol === 'superadmin' && <MenuItem disabled sx={{ opacity: 0.5 }}>—</MenuItem>}
                         <MenuItem disabled sx={{ opacity: 0.8 }}>

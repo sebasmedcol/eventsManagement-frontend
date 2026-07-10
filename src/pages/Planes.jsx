@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../services/api';
-import { usePlan } from '../context/PlanContext';
+import { usePlan } from '../context/planContext';
 import {
   Box,
   Typography,
@@ -61,6 +62,7 @@ const filterModulos = (modulos) =>
 
 const Planes = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const { currentPlan, refreshPlanInfo, isTrialExpired, getTrialDaysRemaining, trialInfo } = usePlan();
   const [planes, setPlanes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -117,9 +119,14 @@ const Planes = () => {
   };
 
   const handleSelectPlan = (planId) => {
-    // Aqui iria la logica para seleccionar/comprar un plan
-    // Por ahora solo mostramos un mensaje
-    toast.info(`Para contratar el plan ${planId}, contacta a nuestro equipo de ventas.`);
+    const normalizedPlanId = planId === 'free' ? 'free_trial' : planId;
+
+    if (normalizedPlanId === 'free_trial') {
+      toast.info('Tu cuenta ya cuenta con flujo de prueba gratuita o plan activo.');
+      return;
+    }
+
+    navigate(`/checkout?plan=${normalizedPlanId}`);
   };
 
   if (loading) {

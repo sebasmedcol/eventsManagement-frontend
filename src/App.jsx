@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider } from './context/AuthContext';
-import { PlanProvider } from './context/PlanContext';
+import { PlanProvider } from './context/planContext';
 import { ThemeContextProvider, useAppTheme } from './context/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
@@ -38,6 +38,9 @@ import EmpresaPendiente from './pages/EmpresaPendiente';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import Configuraciones from './pages/Configuraciones';
 import Planes from './pages/Planes';
+import Checkout from './pages/Checkout';
+import PagoExito from './pages/PagoExito';
+import PagoError from './pages/PagoError';
 
 // Construye el tema MUI dinámicamente a partir del tema activo (currentThemeTokens)
 // y el modo resuelto (resolvedMode), ambos provenientes del ThemeContext.
@@ -311,12 +314,12 @@ function App() {
                         </ProtectedRoute>
                       } />
                       <Route path="/eventos-premium" element={
-                        <ProtectedRoute requiredPermission={{ modulo: 'eventos', accion: 'ver' }}>
+                        <ProtectedRoute requiredPermission={{ modulo: 'eventosPremium', accion: 'ver' }}>
                           <EventosPremium />
                         </ProtectedRoute>
                       } />
                       <Route path="/eventos-premium/:id/gestion" element={
-                        <ProtectedRoute requiredPermission={{ modulo: 'eventos', accion: 'editar' }}>
+                        <ProtectedRoute requiredPermission={{ modulo: 'eventosPremium', accion: 'editar' }}>
                           <GestionEventoPremium />
                         </ProtectedRoute>
                       } />
@@ -362,7 +365,7 @@ function App() {
                       } />
 
                       <Route path="/configuraciones" element={
-                        <ProtectedRoute>
+                        <ProtectedRoute requiredPermission={{ modulo: 'configuracion', accion: 'ver' }}>
                           <Configuraciones />
                         </ProtectedRoute>
                       } />
@@ -371,6 +374,21 @@ function App() {
                       <Route path="/planes" element={
                         <ProtectedRoute>
                           <Planes />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/checkout" element={
+                        <ProtectedRoute>
+                          <Checkout />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/pago/exito" element={
+                        <ProtectedRoute>
+                          <PagoExito />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/pago/error" element={
+                        <ProtectedRoute>
+                          <PagoError />
                         </ProtectedRoute>
                       } />
                     </Routes>

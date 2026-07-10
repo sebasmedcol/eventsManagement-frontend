@@ -75,6 +75,15 @@ const TIPOS_FICHA = ['Alquiler', 'Venta', 'Notas'];
 
 const PLANES_PREMIUM = ['premium', 'super'];
 
+const COLOR_MAIN_BY_KEY = {
+  primary: '#2563eb',
+  secondary: '#7c3aed',
+  success: '#22c55e',
+  warning: '#f59e0b',
+  error: '#ef4444',
+  info: '#06b6d4',
+};
+
 const GestionEventoPremium = () => {
   const theme = useTheme();
   const { user } = useContext(AuthContext);
@@ -175,8 +184,28 @@ const GestionEventoPremium = () => {
   }, [focusFichaId, fichas]);
 
   const paletteFromKey = (key) => {
-    const pal = theme.palette[key];
-    return pal || theme.palette.info;
+    const main = COLOR_MAIN_BY_KEY[key] || theme.palette.info.main;
+    return { main };
+  };
+
+  const renderColorOption = (key, label) => {
+    const pal = paletteFromKey(key);
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box
+          sx={{
+            width: 14,
+            height: 14,
+            borderRadius: '50%',
+            bgcolor: pal.main,
+            border: '1px solid',
+            borderColor: alpha(pal.main, 0.4),
+            flexShrink: 0,
+          }}
+        />
+        <Box component="span">{label}</Box>
+      </Box>
+    );
   };
 
   const formatDateShort = (value) => {
@@ -912,10 +941,20 @@ const GestionEventoPremium = () => {
 
           <FormControl fullWidth margin="normal">
             <InputLabel>Color</InputLabel>
-            <Select name="color" label="Color" value={fichaForm.color} onChange={handleFichaChange}>
+            <Select
+              name="color"
+              label="Color"
+              value={fichaForm.color}
+              onChange={handleFichaChange}
+              renderValue={(value) => {
+                const found = COLOR_KEYS.find((c) => c.key === value);
+                if (!found) return '';
+                return renderColorOption(found.key, found.label);
+              }}
+            >
               {COLOR_KEYS.map((c) => (
                 <MenuItem key={c.key} value={c.key}>
-                  {c.label}
+                  {renderColorOption(c.key, c.label)}
                 </MenuItem>
               ))}
             </Select>
