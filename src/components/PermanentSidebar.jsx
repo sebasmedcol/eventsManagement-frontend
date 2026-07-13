@@ -289,9 +289,29 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
       <Box sx={{ width: currentWidth, height: '100%', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
 
         {/* Badge del plan actual */}
-        <CollapsibleLabel collapsed={collapsed} sx={{ display: 'block', width: '100%' }}>
+        {/*
+          Nota: CollapsibleLabel define overflow:hidden + white-space:nowrap
+          para animar el colapso de los ítems del menú. Al reutilizarlo aquí,
+          eso convertía este bloque en un flex-item "encogible" (overflow
+          distinto de visible resetea su min-height automático a 0), por lo
+          que en ventanas con poca altura el layout flex-column terminaba
+          comprimiéndolo para cederle espacio a la lista de menú, ocultando
+          el texto de "días restantes". Se fuerza flexShrink: 0 para que este
+          bloque siempre reserve su espacio real, y se permite el wrap del
+          texto para que sea responsive en vez de recortarse.
+        */}
+        <CollapsibleLabel
+          collapsed={collapsed}
+          sx={{
+            display: 'block',
+            width: '100%',
+            flexShrink: 0,
+            overflow: 'visible',
+            whiteSpace: 'normal',
+          }}
+        >
           {currentPlan && (
-            <Box sx={{ p: 2, textAlign: 'center', borderBottom: 1, borderColor: 'divider' }}>
+            <Box sx={{ p: { xs: 1.25, sm: 2 }, textAlign: 'center', borderBottom: 1, borderColor: 'divider' }}>
               <Chip
                 label={isSuperAdmin ? 'SuperAdmin' : `Plan ${currentPlan.nombre}`}
                 color={
@@ -301,15 +321,25 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
                   : 'default'
                 }
                 size="small"
-                sx={{ fontWeight: 'bold' }}
+                sx={{ fontWeight: 'bold', maxWidth: '100%' }}
               />
               {!isSuperAdmin && isTrialExpired() && (
-                <Typography variant="caption" display="block" color="error" sx={{ mt: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  display="block"
+                  color="error"
+                  sx={{ mt: 0.5, whiteSpace: 'normal', wordBreak: 'break-word' }}
+                >
                   Trial expirado
                 </Typography>
               )}
               {!isSuperAdmin && !isTrialExpired() && Number.isFinite(diasRestantesPlan) && (
-                <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  display="block"
+                  color="text.secondary"
+                  sx={{ mt: 0.5, whiteSpace: 'normal', wordBreak: 'break-word' }}
+                >
                   {diasRestantesPlan} {diasRestantesPlan === 1 ? 'día restante' : 'días restantes'}
                 </Typography>
               )}
