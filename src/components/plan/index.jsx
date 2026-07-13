@@ -13,3 +13,4 @@ export {
   UsageSummary,
 } from './PlanComponents';
 export { default as FreePlanUpgradeModal } from './FreePlanUpgradeModal';
+export { default as TrialModal } from './TrialModal';

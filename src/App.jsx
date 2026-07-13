@@ -8,7 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import PermanentSidebar from './components/PermanentSidebar';
 import CustomCursor from './components/CustomCursor';
-import { TrialBanner, FreePlanUpgradeModal } from './components/plan';
+import { TrialModal, FreePlanUpgradeModal } from './components/plan';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Container from '@mui/material/Container';
@@ -160,11 +160,11 @@ const GlobalWatermark = () => {
   );
 };
 
-// Componente que muestra el TrialBanner cuando es necesario, y aplica una
+// Componente que muestra el TrialModal cuando es necesario, y aplica una
 // transición de fade suave (estilo cambio de diapositiva) cada vez que
 // cambia de pantalla.
 const AppContent = ({ children }) => {
-  const [showTrialBanner, setShowTrialBanner] = useState(true);
+  const [showTrialModal, setShowTrialModal] = useState(true);
   const location = useLocation();
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
@@ -179,12 +179,10 @@ const AppContent = ({ children }) => {
   return (
     <Box sx={{ width: '100%' }}>
       <FreePlanUpgradeModal />
-      {showTrialBanner && (
-        <TrialBanner 
-          onClose={() => setShowTrialBanner(false)} 
-          variant="filled"
-        />
-      )}
+      <TrialModal
+        open={showTrialModal}
+        onClose={() => setShowTrialModal(false)}
+      />
       <Box key={location.pathname} className="app-page-transition">
         {children}
       </Box>
