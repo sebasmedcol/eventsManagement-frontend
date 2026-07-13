@@ -203,7 +203,7 @@ const ThemePicker = ({ anchorEl, onClose }) => {
       <Divider />
 
       <MenuItem onClick={handleGoToConfig}>
-        <Typography variant="body2">Mas opciones en Configuraciones</Typography>
+        <Typography variant="body2">Mas opciones aqui</Typography>
       </MenuItem>
     </Menu>
   );

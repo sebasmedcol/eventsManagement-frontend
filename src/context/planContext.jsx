@@ -179,9 +179,16 @@ export const PlanProvider = ({ children }) => {
   }, [isTrialExpired]);
 
   /**
-   * Obtiene los dias restantes del trial
+   * Obtiene los dias restantes del periodo actual del plan.
+   * Aplica a cualquier plan (trial o pago): el backend calcula esto en
+   * `planInfo.periodoActual` comparando la fecha actual contra la fecha
+   * de fin de trial o el próximo cobro, según corresponda.
    */
   const getTrialDaysRemaining = useCallback(() => {
+    if (planInfo?.periodoActual && Number.isFinite(planInfo.periodoActual.diasRestantes)) {
+      return planInfo.periodoActual.diasRestantes;
+    }
+    // Compatibilidad con respuestas antiguas que solo incluían `trial`.
     if (!planInfo?.trial) return null;
     return planInfo.trial.diasRestantes;
   }, [planInfo]);
