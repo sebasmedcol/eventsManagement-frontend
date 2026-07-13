@@ -65,7 +65,16 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem(CONFIG_STORAGE_KEY);
       }
 
-      navigate('/dashboard');
+      // Marca que se acaba de iniciar sesión, para que el modal de
+      // promoción del plan (si aplica) se muestre una vez en esta sesión.
+      try {
+        sessionStorage.setItem('justLoggedIn', '1');
+      } catch {
+        /* ignore */
+      }
+
+      // La navegación hacia /dashboard la controla la pantalla de Login,
+      // para poder mostrar primero una transición de bienvenida.
       return true;
     } catch (err) {
       setError(err.response?.data?.message || 'Error al iniciar sesión');
@@ -96,6 +105,12 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(cfg.data));
       } catch {
         localStorage.removeItem(CONFIG_STORAGE_KEY);
+      }
+
+      try {
+        sessionStorage.setItem('justLoggedIn', '1');
+      } catch {
+        /* ignore */
       }
 
       if (

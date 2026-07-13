@@ -12,3 +12,4 @@ export {
   PlanBadge,
   UsageSummary,
 } from './PlanComponents';
+export { default as FreePlanUpgradeModal } from './FreePlanUpgradeModal';

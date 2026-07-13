@@ -2,12 +2,247 @@
   font-family: 'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif;
   line-height: 1.5;
   font-weight: 400;
+
+  /* Variables de tema sincronizadas en tiempo real por ThemeContext */
+  --app-accent: #5D87FF;
+  --app-accent-strong: #2F5BFF;
+  --app-accent-soft: #8A5DFF;
+  --app-scrollbar-track: rgba(0, 0, 0, 0.04);
+  --app-bg-paper: #ffffff;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Scrollbar personalizado, temático (se aplica en toda la app, incluyendo
+   el menú lateral y el contenido de cada pantalla).
+   ──────────────────────────────────────────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--app-accent) var(--app-scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--app-scrollbar-track);
+  border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--app-accent) 0%, var(--app-accent-strong) 100%);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background 0.2s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--app-accent-strong) 0%, var(--app-accent) 100%);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Transiciones de página (fade suave, estilo "cambio de diapositiva").
+   ──────────────────────────────────────────────────────────────────────── */
+@keyframes app-page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.app-page-transition {
+  animation: app-page-fade-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes app-welcome-fade {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Feedback de "click" para todos los botones de la aplicación: una ligera
+   contracción al presionar da la sensación táctil de que el click se
+   registró.
+   ──────────────────────────────────────────────────────────────────────── */
+.MuiButtonBase-root {
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.MuiButtonBase-root:active {
+  transform: scale(0.96);
+}
+
+/* Efecto "tinte" al pasar el mouse sobre botones: varios puntos de color se
+   expanden desde distintas zonas del botón, como si se tiñera de forma
+   orgánica (no un barrido uniforme). Usa currentColor para adaptarse
+   automáticamente a cualquiera de los 4 temas y a modo claro/oscuro. */
+.MuiButton-root {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.MuiButton-root::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  background-image:
+    radial-gradient(circle at 18% 28%, currentColor 0%, transparent 42%),
+    radial-gradient(circle at 82% 22%, currentColor 0%, transparent 40%),
+    radial-gradient(circle at 65% 82%, currentColor 0%, transparent 46%),
+    radial-gradient(circle at 20% 80%, currentColor 0%, transparent 42%);
+  transition: opacity 0.45s ease;
+}
+.MuiButton-outlined::after,
+.MuiButton-text::after {
+  opacity: 0;
+}
+.MuiButton-outlined:hover::after,
+.MuiButton-text:hover::after {
+  opacity: 0.12;
+}
+.MuiButton-contained::after {
+  background-image:
+    radial-gradient(circle at 18% 28%, rgba(255,255,255,0.9) 0%, transparent 42%),
+    radial-gradient(circle at 82% 22%, rgba(255,255,255,0.8) 0%, transparent 40%),
+    radial-gradient(circle at 65% 82%, rgba(255,255,255,0.8) 0%, transparent 46%),
+    radial-gradient(circle at 20% 80%, rgba(255,255,255,0.85) 0%, transparent 42%);
+}
+.MuiButton-contained:hover::after {
+  opacity: 0.16;
+}
+.MuiButton-root > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Cursor personalizado: se oculta el cursor nativo del sistema en
+   dispositivos con puntero preciso (mouse) y se reemplaza por el
+   componente <CustomCursor />. En campos de texto se conserva el cursor
+   nativo para no interferir con la edición.
+   ──────────────────────────────────────────────────────────────────────── */
+@media (pointer: fine) {
+  body.app-custom-cursor,
+  body.app-custom-cursor * {
+    cursor: none;
+  }
+  body.app-custom-cursor input,
+  body.app-custom-cursor textarea,
+  body.app-custom-cursor select,
+  body.app-custom-cursor [contenteditable='true'] {
+    cursor: text;
+  }
+}
+
+.app-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 2147483647;
+  opacity: 0;
+  will-change: transform;
+  mix-blend-mode: normal;
+  transition: width 0.22s cubic-bezier(0.34,1.56,0.64,1),
+              height 0.22s cubic-bezier(0.34,1.56,0.64,1),
+              border-radius 0.28s ease,
+              opacity 0.18s ease,
+              background 0.25s ease,
+              box-shadow 0.25s ease,
+              transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.app-cursor.is-visible {
+  opacity: 0.92;
+}
+
+.app-cursor.is-down {
+  opacity: 0.98;
+}
+
+/* ── Diseño 1: Orgánico — gota de bordes irregulares, ligada al tema ── */
+.app-cursor--organico {
+  width: 22px;
+  height: 22px;
+  border-radius: 30% 70% 65% 35% / 40% 45% 55% 60%;
+  background: linear-gradient(135deg, var(--app-accent) 0%, var(--app-accent-soft) 100%);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+  transform: translate3d(-4px, -4px, 0) rotate(-18deg) scale(1);
+}
+.app-cursor--organico.is-pointer {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--app-accent-soft) 0%, var(--app-accent) 70%);
+}
+
+/* ── Diseño 2: Anillo — aro fino en tonos cian/azul eléctrico ── */
+.app-cursor--anillo {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2.5px solid #22D3EE;
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18), 0 2px 10px rgba(8, 47, 73, 0.35);
+  transform: translate3d(-4px, -4px, 0) scale(1);
+}
+.app-cursor--anillo.is-pointer {
+  width: 40px;
+  height: 40px;
+  border-width: 3px;
+  border-color: #0EA5E9;
+  background: rgba(14, 165, 233, 0.12);
+  box-shadow: 0 0 0 5px rgba(14, 165, 233, 0.16), 0 2px 14px rgba(8, 47, 73, 0.4);
+}
+.app-cursor--anillo.is-down {
+  border-color: #0369A1;
+}
+
+/* ── Diseño 3: Diamante — rombo con resplandor magenta/violeta ── */
+.app-cursor--diamante {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #F472B6 0%, #A855F7 100%);
+  box-shadow: 0 0 12px rgba(217, 70, 239, 0.55), 0 2px 8px rgba(88, 28, 135, 0.35);
+  transform: translate3d(-4px, -4px, 0) rotate(45deg) scale(1);
+}
+.app-cursor--diamante.is-pointer {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #E879F9 0%, #8B5CF6 100%);
+  box-shadow: 0 0 18px rgba(217, 70, 239, 0.7), 0 2px 12px rgba(88, 28, 135, 0.45);
+}
+.app-cursor--diamante.is-down {
+  box-shadow: 0 0 22px rgba(217, 70, 239, 0.85), 0 2px 14px rgba(88, 28, 135, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-cursor { display: none; }
+  body.app-custom-cursor,
+  body.app-custom-cursor * {
+    cursor: auto !important;
+  }
 }
 
 /* Marca de agua global centrada (pantalla y también válida para impresión) */

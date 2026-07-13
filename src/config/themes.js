@@ -109,3 +109,30 @@ export const THEMES = [
 ];
 
 export const DEFAULT_THEME_ID = 'estandar';
+
+// Diseños de cursor disponibles en el menú de temas. 'sistema' desactiva
+// el cursor personalizado y deja el cursor nativo del sistema operativo.
+export const CURSOR_STYLES = [
+  {
+    id: 'organico',
+    nombre: 'Orgánico',
+    descripcion: 'Gota suave con los colores del tema activo',
+  },
+  {
+    id: 'anillo',
+    nombre: 'Anillo',
+    descripcion: 'Aro fino en tonos cian/azul eléctrico',
+  },
+  {
+    id: 'diamante',
+    nombre: 'Diamante',
+    descripcion: 'Rombo con resplandor magenta/violeta',
+  },
+  {
+    id: 'sistema',
+    nombre: 'Predeterminado',
+    descripcion: 'El cursor original del sistema operativo',
+  },
+];
+
+export const DEFAULT_CURSOR_STYLE = 'organico';

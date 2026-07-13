@@ -56,6 +56,8 @@ export const PlanProvider = ({ children }) => {
    * @returns {boolean}
    */
   const canAccessModule = useCallback((moduleName) => {
+    // El modulo de Configuracion esta incluido en todos los planes, sin excepcion.
+    if (moduleName === 'configuracion') return true;
     if (!planInfo?.modulos) return true; // Si no hay info, permitir por defecto
     return planInfo.modulos[moduleName]?.disponible === true;
   }, [planInfo]);

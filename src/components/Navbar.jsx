@@ -38,7 +38,6 @@ import MenuIcon from '@mui/icons-material/Menu';
 import Sidebar from './Sidebar';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
-import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import PaletteIcon from '@mui/icons-material/Palette';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -79,7 +78,7 @@ const getUserIconComponent = (user) => {
 
 const Navbar = ({ sidebarCollapsed, onToggleSidebarCollapsed }) => {
   const { user, logout } = useContext(AuthContext);
-  const { resolvedMode, colorMode, setColorMode } = useAppTheme();
+  const { resolvedMode, toggleColorMode } = useAppTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -92,13 +91,8 @@ const Navbar = ({ sidebarCollapsed, onToggleSidebarCollapsed }) => {
   const eventosNotifReady = useRef(false);
   const prevEventosNotifCount = useRef(0);
 
-  // Cicla entre los modos: claro → oscuro → sistema → claro.
-  const handleToggleMode = () => {
-    setColorMode(colorMode === 'light' ? 'dark' : colorMode === 'dark' ? 'system' : 'light');
-  };
-
-  const modeTooltip =
-    colorMode === 'light' ? 'Modo oscuro' : colorMode === 'dark' ? 'Modo sistema' : 'Modo claro';
+  // Alterna entre modo claro y oscuro.
+  const modeTooltip = resolvedMode === 'dark' ? 'Modo claro' : 'Modo oscuro';
 
   const isLoginPage = location.pathname === '/login';
 
@@ -317,16 +311,10 @@ const Navbar = ({ sidebarCollapsed, onToggleSidebarCollapsed }) => {
           </Tooltip>
           <ThemePicker anchorEl={anchorTheme} onClose={() => setAnchorTheme(null)} />
 
-          {/* Botón para alternar el modo de color (claro → oscuro → sistema) */}
+          {/* Botón para alternar el modo de color (claro ↔ oscuro) */}
           <Tooltip title={modeTooltip}>
-            <IconButton color="inherit" onClick={handleToggleMode} sx={{ mr: 1 }}>
-              {colorMode === 'system' ? (
-                <SettingsSuggestIcon />
-              ) : resolvedMode === 'dark' ? (
-                <LightModeIcon />
-              ) : (
-                <DarkModeIcon />
-              )}
+            <IconButton color="inherit" onClick={toggleColorMode} sx={{ mr: 1 }}>
+              {resolvedMode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
             </IconButton>
           </Tooltip>
 

@@ -60,6 +60,14 @@ const filterModulos = (modulos) =>
     (m) => !EXCLUDED_MODULES.includes(normalizeStr(m.nombre))
   );
 
+// El modulo de Configuracion esta incluido en TODOS los planes (incluido el
+// Basico), asi que sin importar lo que diga el backend, en esta pantalla
+// siempre se muestra como disponible (nunca con una "X").
+const esModuloConfiguracion = (nombre) => normalizeStr(nombre) === 'configuracion';
+
+const moduloEstaDisponible = (modulo) =>
+  esModuloConfiguracion(modulo?.nombre) ? true : modulo?.disponible === true;
+
 const Planes = () => {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -190,7 +198,7 @@ const Planes = () => {
 
       {/* Vista de tarjetas */}
       {activeTab === 0 && (
-        <Grid container spacing={3} justifyContent="center">
+        <Grid container spacing={3} justifyContent="center" sx={{ pt: 2 }}>
           {sortedPlanes.map((plan) => {
             const colors = getPlanColor(plan.id);
             const isCurrentPlan = currentPlan?.id === plan.id;
@@ -204,6 +212,7 @@ const Planes = () => {
                     display: 'flex',
                     flexDirection: 'column',
                     position: 'relative',
+                    overflow: 'visible',
                     border: isCurrentPlan ? `3px solid ${colors.main}` : '1px solid',
                     borderColor: isCurrentPlan ? colors.main : 'divider',
                     transform: isPremium ? 'scale(1.05)' : 'none',
@@ -261,6 +270,8 @@ const Planes = () => {
                       bgcolor: colors.light,
                       textAlign: 'center',
                       pt: isPremium ? 4 : 3,
+                      borderTopLeftRadius: 12,
+                      borderTopRightRadius: 12,
                     }}
                     title={
                       <Box>
@@ -354,24 +365,27 @@ const Planes = () => {
                       Modulos:
                     </Typography>
                     <List dense>
-                      {filterModulos(plan.modulos).slice(0, 5).map((modulo) => (
-                        <ListItem key={modulo.id} sx={{ py: 0.25 }}>
-                          <ListItemIcon sx={{ minWidth: 28 }}>
-                            {modulo.disponible ? (
-                              <CheckIcon color="success" fontSize="small" />
-                            ) : (
-                              <CloseIcon color="disabled" fontSize="small" />
-                            )}
-                          </ListItemIcon>
-                          <ListItemText 
-                            primary={modulo.nombre}
-                            primaryTypographyProps={{ 
-                              variant: 'body2',
-                              color: modulo.disponible ? 'text.primary' : 'text.disabled',
-                            }}
-                          />
-                        </ListItem>
-                      ))}
+                      {filterModulos(plan.modulos).slice(0, 5).map((modulo) => {
+                        const disponible = moduloEstaDisponible(modulo);
+                        return (
+                          <ListItem key={modulo.id} sx={{ py: 0.25 }}>
+                            <ListItemIcon sx={{ minWidth: 28 }}>
+                              {disponible ? (
+                                <CheckIcon color="success" fontSize="small" />
+                              ) : (
+                                <CloseIcon color="disabled" fontSize="small" />
+                              )}
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={modulo.nombre}
+                              primaryTypographyProps={{
+                                variant: 'body2',
+                                color: disponible ? 'text.primary' : 'text.disabled',
+                              }}
+                            />
+                          </ListItem>
+                        );
+                      })}
                     </List>
                   </CardContent>
 
@@ -459,6 +473,7 @@ const Planes = () => {
                   <Box sx={{ width: 200, p: 2 }}>{moduloRef.nombre}</Box>
                   {sortedPlanes.map((plan) => {
                     const modulo = plan.modulos?.find((m) => m.id === moduloRef.id);
+                    const disponible = esModuloConfiguracion(moduloRef.nombre) ? true : moduloEstaDisponible(modulo);
                     return (
                       <Box
                         key={`${plan.id}-${moduloRef.id}`}
@@ -469,7 +484,7 @@ const Planes = () => {
                           bgcolor: currentPlan?.id === plan.id ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
                         }}
                       >
-                        {modulo?.disponible ? (
+                        {disponible ? (
                           <CheckIcon color="success" />
                         ) : (
                           <CloseIcon color="disabled" />

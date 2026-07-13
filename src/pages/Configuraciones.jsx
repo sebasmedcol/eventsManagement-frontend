@@ -83,7 +83,7 @@ const Configuraciones = () => {
   const { user } = useContext(AuthContext);
   const canEditEmpresa = user?.rol === 'admin' || user?.rol === 'superadmin';
 
-  const { themeId, setThemeId, colorMode, setColorMode, resolvedMode, availableThemes } = useAppTheme();
+  const { themeId, setThemeId, colorMode, setColorMode, resolvedMode, availableThemes, cursorStyle, setCursorStyle, availableCursorStyles } = useAppTheme();
 
   const [loading, setLoading] = useState(true);
   const [savingUser, setSavingUser] = useState(false);
@@ -618,7 +618,6 @@ const Configuraciones = () => {
           {[
             { value: 'light', label: 'Claro' },
             { value: 'dark', label: 'Oscuro' },
-            { value: 'system', label: 'Sistema' },
           ].map(({ value, label }) => (
             <Button
               key={value}
@@ -723,6 +722,119 @@ const Configuraciones = () => {
           })}
         </Box>
 
+        {/* Selector de diseño de cursor */}
+        <Typography variant="subtitle2" sx={{ color: 'text.secondary', mb: 1 }}>
+          Diseño de cursor
+        </Typography>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(4, 1fr)' },
+            gap: 2,
+            mb: 3,
+          }}
+        >
+          {availableCursorStyles.map((c) => {
+            const isActive = cursorStyle === c.id;
+            return (
+              <Box
+                key={c.id}
+                onClick={() => setCursorStyle(c.id)}
+                role="button"
+                aria-label={`Cursor ${c.nombre}`}
+                sx={{
+                  border: isActive ? '2px solid' : '1px solid',
+                  borderColor: isActive ? 'primary.main' : 'divider',
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'border-color 0.2s, box-shadow 0.2s',
+                  '&:hover': { boxShadow: 3 },
+                  position: 'relative',
+                }}
+              >
+                {/* Previsualización del diseño de cursor */}
+                <Box
+                  sx={{
+                    height: 44,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor: 'action.hover',
+                  }}
+                >
+                  {c.id === 'organico' && (
+                    <Box
+                      sx={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: '30% 70% 65% 35% / 40% 45% 55% 60%',
+                        background: 'linear-gradient(135deg, var(--app-accent, #5D87FF) 0%, var(--app-accent-soft, #8A5DFF) 100%)',
+                      }}
+                    />
+                  )}
+                  {c.id === 'anillo' && (
+                    <Box
+                      sx={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        border: '2.5px solid #22D3EE',
+                      }}
+                    />
+                  )}
+                  {c.id === 'diamante' && (
+                    <Box
+                      sx={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: '3px',
+                        transform: 'rotate(45deg)',
+                        background: 'linear-gradient(135deg, #F472B6 0%, #A855F7 100%)',
+                        boxShadow: '0 0 6px rgba(217, 70, 239, 0.6)',
+                      }}
+                    />
+                  )}
+                  {c.id === 'sistema' && (
+                    <Box component="span" sx={{ fontSize: 20, color: 'text.secondary', transform: 'rotate(-12deg)' }}>
+                      ➤
+                    </Box>
+                  )}
+                </Box>
+                {/* Info del diseño */}
+                <Box sx={{ p: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                    {c.nombre}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    {c.descripcion}
+                  </Typography>
+                </Box>
+                {/* Badge "Activo" */}
+                {isActive && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 6,
+                      right: 6,
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      px: 0.75,
+                      py: 0.25,
+                      borderRadius: 1,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    Activo
+                  </Box>
+                )}
+              </Box>
+            );
+          })}
+        </Box>
+
         {/* Botón de confirmación con toast */}
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button
@@ -739,4 +851,3 @@ const Configuraciones = () => {
 };
 
 export default Configuraciones;
-

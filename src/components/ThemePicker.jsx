@@ -8,13 +8,11 @@ import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
-import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import { useAppTheme } from '../context/ThemeContext';
 
 const MODE_LABELS = {
   light: 'Claro',
   dark: 'Oscuro',
-  system: 'Sistema',
 };
 
 const ThemePicker = ({ anchorEl, onClose }) => {
@@ -23,27 +21,20 @@ const ThemePicker = ({ anchorEl, onClose }) => {
     themeId,
     setThemeId,
     colorMode,
-    setColorMode,
+    toggleColorMode,
     resolvedMode,
     availableThemes,
+    cursorStyle,
+    setCursorStyle,
+    availableCursorStyles,
   } = useAppTheme();
-
-  const handleToggleMode = () => {
-    const next = colorMode === 'light' ? 'dark' : colorMode === 'dark' ? 'system' : 'light';
-    setColorMode(next);
-  };
 
   const handleGoToConfig = () => {
     onClose?.();
     navigate('/configuraciones');
   };
 
-  const ModeIcon =
-    colorMode === 'system'
-      ? SettingsSuggestIcon
-      : resolvedMode === 'dark'
-        ? DarkModeIcon
-        : LightModeIcon;
+  const ModeIcon = resolvedMode === 'dark' ? DarkModeIcon : LightModeIcon;
 
   return (
     <Menu
@@ -84,8 +75,8 @@ const ThemePicker = ({ anchorEl, onClose }) => {
                   outline: isActive ? '2px solid' : '1px solid',
                   outlineColor: isActive ? 'primary.main' : 'divider',
                   outlineOffset: isActive ? '1px' : 0,
-                  transition: 'outline-color 0.2s, transform 0.1s',
-                  '&:hover': { transform: 'scale(1.04)' },
+                  transition: 'outline-color 0.2s, transform 0.15s cubic-bezier(.34,1.56,.64,1)',
+                  '&:hover': { transform: 'scale(1.06)' },
                 }}
               />
             </Tooltip>
@@ -109,7 +100,7 @@ const ThemePicker = ({ anchorEl, onClose }) => {
           <Typography variant="body2">{MODE_LABELS[colorMode]}</Typography>
         </Box>
         <Tooltip title="Cambiar modo">
-          <IconButton size="small" onClick={handleToggleMode} aria-label="Cambiar modo de color">
+          <IconButton size="small" onClick={toggleColorMode} aria-label="Cambiar modo de color">
             {resolvedMode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
           </IconButton>
         </Tooltip>
@@ -117,8 +108,102 @@ const ThemePicker = ({ anchorEl, onClose }) => {
 
       <Divider />
 
+      <Typography variant="caption" sx={{ color: 'text.secondary', px: 2, pt: 1, display: 'block' }}>
+        Diseño de cursor
+      </Typography>
+
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 1,
+          px: 2,
+          py: 1,
+        }}
+      >
+        {availableCursorStyles.map((c) => {
+          const isActive = cursorStyle === c.id;
+          return (
+            <Tooltip title={c.descripcion} key={c.id}>
+              <Box
+                onClick={() => setCursorStyle(c.id)}
+                role="button"
+                aria-label={`Cursor ${c.nombre}`}
+                sx={{
+                  height: 56,
+                  borderRadius: 1.5,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 0.5,
+                  bgcolor: 'action.hover',
+                  outline: isActive ? '2px solid' : '1px solid',
+                  outlineColor: isActive ? 'primary.main' : 'divider',
+                  outlineOffset: isActive ? '1px' : 0,
+                  transition: 'outline-color 0.2s, transform 0.15s cubic-bezier(.34,1.56,.64,1)',
+                  '&:hover': { transform: 'scale(1.04)' },
+                }}
+              >
+                {c.id === 'organico' && (
+                  <Box
+                    sx={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: '30% 70% 65% 35% / 40% 45% 55% 60%',
+                      background: 'linear-gradient(135deg, var(--app-accent, #5D87FF) 0%, var(--app-accent-soft, #8A5DFF) 100%)',
+                    }}
+                  />
+                )}
+                {c.id === 'anillo' && (
+                  <Box
+                    sx={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: '50%',
+                      border: '2.5px solid #22D3EE',
+                    }}
+                  />
+                )}
+                {c.id === 'diamante' && (
+                  <Box
+                    sx={{
+                      width: 13,
+                      height: 13,
+                      borderRadius: '3px',
+                      transform: 'rotate(45deg)',
+                      background: 'linear-gradient(135deg, #F472B6 0%, #A855F7 100%)',
+                      boxShadow: '0 0 6px rgba(217, 70, 239, 0.6)',
+                    }}
+                  />
+                )}
+                {c.id === 'sistema' && (
+                  <Box
+                    component="span"
+                    sx={{
+                      fontSize: 15,
+                      lineHeight: 1,
+                      color: 'text.secondary',
+                      transform: 'rotate(-12deg)',
+                    }}
+                  >
+                    ➤
+                  </Box>
+                )}
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
+                  {c.nombre}
+                </Typography>
+              </Box>
+            </Tooltip>
+          );
+        })}
+      </Box>
+
+      <Divider />
+
       <MenuItem onClick={handleGoToConfig}>
-        <Typography variant="body2">Más opciones en Configuraciones</Typography>
+        <Typography variant="body2">Mas opciones en Configuraciones</Typography>
       </MenuItem>
     </Menu>
   );
