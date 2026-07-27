@@ -36,7 +36,7 @@ const VentaForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isReadOnlyMode } = usePlan();
+  const { isReadOnlyMode, refreshPlanInfo } = usePlan();
   const isEditMode = !!id;
   const fromCotizacionId = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -566,6 +566,7 @@ const VentaForm = () => {
         const res = await api.post('/ventas', ventaData);
         const ventaId = res?.data?._id || '';
         toast.success('Venta creada correctamente');
+        refreshPlanInfo(); // Actualizar barra de uso del plan
 
         const fichaId =
           fromEventoFichaId || location.state?.fromEventoFicha?._id || '';
@@ -585,7 +586,13 @@ const VentaForm = () => {
       
       navigate('/ventas');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error al guardar la venta');
+      if (error.response?.data?.code === 'LIMIT_REACHED') {
+        toast.error('Has alcanzado el límite de ventas de tu plan. Mejora tu plan para agregar más.');
+      } else if (error.response?.data?.code === 'TRIAL_EXPIRED') {
+        toast.error('Tu periodo de prueba ha expirado. Por favor selecciona un plan.');
+      } else {
+        toast.error(error.response?.data?.message || 'Error al guardar la venta');
+      }
       console.error('Error al guardar venta:', error);
     } finally {
       setSubmitting(false);

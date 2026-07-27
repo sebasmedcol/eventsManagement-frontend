@@ -54,7 +54,7 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import AuthContext from '../context/AuthContext';
 import { usePlan } from '../context/PlanContext';
-import { TrialExpiredBanner } from '../components/plan';
+import { TrialExpiredBanner, UsageIndicator, LimitedButton, UpgradeRecommendation } from '../components/plan';
 import { getUsuarios, createUsuario, updateUsuario, deleteUsuario } from '../services/usuarioService';
 import { getRoles } from '../services/rolService';
 import api from '../services/api';
@@ -113,7 +113,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const Usuarios = () => {
   const { user } = useContext(AuthContext);
-  const { isReadOnlyMode } = usePlan();
+  const { isReadOnlyMode, refreshPlanInfo, shouldRecommendUpgrade } = usePlan();
   const readOnly = isReadOnlyMode();
   const userId = user?._id;
   const userEmpresaId = user?.empresaId;
@@ -348,13 +348,20 @@ const Usuarios = () => {
         const creado = await createUsuario(payload);
         setUsuarios((prev) => [...prev, creado]);
         toast.success('Usuario creado');
+        refreshPlanInfo(); // Actualizar barra de uso del plan
       }
 
       setOpenModal(false);
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || 'Error al guardar el usuario'
-      );
+      if (error.response?.data?.code === 'LIMIT_REACHED') {
+        toast.error('Has alcanzado el límite de usuarios de tu plan. Mejora tu plan para agregar más.');
+      } else if (error.response?.data?.code === 'TRIAL_EXPIRED') {
+        toast.error('Tu periodo de prueba ha expirado. Por favor selecciona un plan.');
+      } else {
+        toast.error(
+          error.response?.data?.message || 'Error al guardar el usuario'
+        );
+      }
       console.error('Error al guardar usuario:', error);
     }
   };
@@ -412,6 +419,7 @@ const Usuarios = () => {
         prev.map((u) => (u._id === actualizado._id ? actualizado : u))
       );
       toast.success('Usuario desactivado');
+      refreshPlanInfo(); // Actualizar barra de uso del plan
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error al desactivar el usuario');
       console.error('Error al desactivar usuario:', error);
@@ -457,20 +465,36 @@ const Usuarios = () => {
         {/* Banner de trial expirado — modo solo lectura */}
         <TrialExpiredBanner />
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h5">Usuarios</Typography>
-          {!readOnly && puedeCrearUsuario && (
-            <Tooltip title="Crear un nuevo usuario para esta empresa">
-              <Button
-                variant="contained"
-                startIcon={<FaPlus />}
-                onClick={() => handleOpenModal(null)}
-              >
-                Nuevo usuario
-              </Button>
-            </Tooltip>
-          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* Indicador de uso del límite del plan */}
+            <UsageIndicator resourceType="usuarios" showProgress={true} size="medium" />
+
+            {!readOnly && puedeCrearUsuario && (
+              <Tooltip title="Crear un nuevo usuario para esta empresa">
+                <span>
+                  <LimitedButton
+                    resourceType="usuarios"
+                    variant="contained"
+                    startIcon={<FaPlus />}
+                    onClick={() => handleOpenModal(null)}
+                    showUsage={false}
+                  >
+                    Nuevo usuario
+                  </LimitedButton>
+                </span>
+              </Tooltip>
+            )}
+          </Box>
         </Box>
+
+        {/* Recomendación de upgrade si está cerca del límite */}
+        {shouldRecommendUpgrade() && (
+          <Box sx={{ mb: 2 }}>
+            <UpgradeRecommendation />
+          </Box>
+        )}
 
         <Paper>
           {loading ? (

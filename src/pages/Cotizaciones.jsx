@@ -4,7 +4,7 @@ import { FaPlus, FaExchangeAlt, FaEye, FaEdit, FaPrint } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import usePermisos from '../hooks/usePermisos';
 import { usePlan } from '../context/PlanContext';
-import { TrialExpiredBanner } from '../components/plan';
+import { TrialExpiredBanner, UsageIndicator, LimitedButton, UpgradeRecommendation } from '../components/plan';
 import {
   Box,
   Typography,
@@ -42,7 +42,7 @@ import {
 
 const Cotizaciones = () => {
   const { puedeCrear, puedeEditar } = usePermisos();
-  const { isReadOnlyMode } = usePlan();
+  const { isReadOnlyMode, refreshPlanInfo, shouldRecommendUpgrade } = usePlan();
   const readOnly = isReadOnlyMode();
   const [cotizaciones, setCotizaciones] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -228,13 +228,20 @@ const Cotizaciones = () => {
         const creada = await createCotizacion(payload);
         setCotizaciones((prev) => [...prev, creada]);
         toast.success('Cotización creada');
+        refreshPlanInfo(); // Actualizar barra de uso del plan
       }
       setOpenNueva(false);
     } catch (error) {
-      toast.error(
-        error.response?.data?.message ||
-          (editingCotizacionId ? 'Error al actualizar la cotización' : 'Error al crear la cotización')
-      );
+      if (error.response?.data?.code === 'LIMIT_REACHED') {
+        toast.error('Has alcanzado el límite de cotizaciones de tu plan. Mejora tu plan para agregar más.');
+      } else if (error.response?.data?.code === 'TRIAL_EXPIRED') {
+        toast.error('Tu periodo de prueba ha expirado. Por favor selecciona un plan.');
+      } else {
+        toast.error(
+          error.response?.data?.message ||
+            (editingCotizacionId ? 'Error al actualizar la cotización' : 'Error al crear la cotización')
+        );
+      }
       console.error('Error guardar cotización:', error);
     }
   };
@@ -300,20 +307,36 @@ const Cotizaciones = () => {
         {/* Banner de trial expirado — modo solo lectura */}
         <TrialExpiredBanner />
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h5">Cotizaciones</Typography>
-          {!readOnly && (
-            <Tooltip title="Crear una nueva cotización a partir de cliente y productos">
-              <Button
-                variant="contained"
-                startIcon={<FaPlus />}
-                onClick={handleOpenNueva}
-              >
-                Nueva cotización
-              </Button>
-            </Tooltip>
-          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* Indicador de uso del límite del plan */}
+            <UsageIndicator resourceType="cotizaciones" showProgress={true} size="medium" />
+
+            {!readOnly && (
+              <Tooltip title="Crear una nueva cotización a partir de cliente y productos">
+                <span>
+                  <LimitedButton
+                    resourceType="cotizaciones"
+                    variant="contained"
+                    startIcon={<FaPlus />}
+                    onClick={() => handleOpenNueva()}
+                    showUsage={false}
+                  >
+                    Nueva cotización
+                  </LimitedButton>
+                </span>
+              </Tooltip>
+            )}
+          </Box>
         </Box>
+
+        {/* Recomendación de upgrade si está cerca del límite */}
+        {shouldRecommendUpgrade() && (
+          <Box sx={{ mb: 2 }}>
+            <UpgradeRecommendation />
+          </Box>
+        )}
 
         <Paper>
           {loading ? (

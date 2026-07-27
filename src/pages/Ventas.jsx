@@ -5,7 +5,7 @@ import api from '../services/api';
 import { toast } from 'react-toastify';
 import usePermisos from '../hooks/usePermisos';
 import { usePlan } from '../context/PlanContext';
-import { TrialExpiredBanner } from '../components/plan';
+import { TrialExpiredBanner, UsageIndicator, LimitedButton, UpgradeRecommendation } from '../components/plan';
 import {
   Box,
   Typography,
@@ -38,7 +38,7 @@ import {
 
 const Ventas = () => {
   const { puedeCrear, puedeEditar, puedeEliminar } = usePermisos();
-  const { isReadOnlyMode } = usePlan();
+  const { isReadOnlyMode, refreshPlanInfo, shouldRecommendUpgrade } = usePlan();
   const readOnly = isReadOnlyMode();
   const [ventas, setVentas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +69,7 @@ const handleAnular = async (id) => {
     await api.put(`/ventas/${id}/anular`);
     toast.success('Venta anulada correctamente');
     fetchVentas();
+    refreshPlanInfo(); // Actualizar barra de uso del plan
   } catch (error) {
     toast.error(error.response?.data?.message || 'Error al anular la venta');
     console.error('Error al anular venta:', error);
@@ -98,6 +99,7 @@ const fetchVentas = async () => {
       await api.delete(`/ventas/${id}`);
       toast.success('Venta eliminada correctamente');
       fetchVentas();
+      refreshPlanInfo(); // Actualizar barra de uso del plan
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error al eliminar la venta');
       console.error('Error al eliminar venta:', error);
@@ -178,22 +180,36 @@ const fetchVentas = async () => {
       {/* Banner de trial expirado — modo solo lectura */}
       <TrialExpiredBanner />
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
           Módulo de Ventas
         </Typography>
-        {!readOnly && puedeCrear('ventas') && (
-          <Button
-            component={Link}
-            to="/ventas/nueva"
-            variant="contained"
-            color="secondary"
-            startIcon={<FaPlus />}
-          >
-            Nueva Venta
-          </Button>
-        )}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Indicador de uso del límite del plan */}
+          <UsageIndicator resourceType="ventas" showProgress={true} size="medium" />
+
+          {!readOnly && puedeCrear('ventas') && (
+            <LimitedButton
+              resourceType="ventas"
+              component={Link}
+              to="/ventas/nueva"
+              variant="contained"
+              color="secondary"
+              startIcon={<FaPlus />}
+              showUsage={false}
+            >
+              Nueva Venta
+            </LimitedButton>
+          )}
+        </Box>
       </Box>
+
+      {/* Recomendación de upgrade si está cerca del límite */}
+      {shouldRecommendUpgrade() && (
+        <Box sx={{ mb: 3 }}>
+          <UpgradeRecommendation />
+        </Box>
+      )}
 
       {/* Controles de búsqueda y paginación */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>

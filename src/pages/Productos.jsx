@@ -5,7 +5,7 @@ import api from '../services/api';
 import { toast } from 'react-toastify';
 import usePermisos from '../hooks/usePermisos';
 import { usePlan } from '../context/PlanContext';
-import { TrialExpiredBanner } from '../components/plan';
+import { TrialExpiredBanner, UsageIndicator, LimitedButton, UpgradeRecommendation } from '../components/plan';
 import {
   Box,
   Typography,
@@ -38,7 +38,7 @@ import {
 
 const Productos = () => {
   const { puedeCrear, puedeEditar, puedeEliminar } = usePermisos();
-  const { isReadOnlyMode } = usePlan();
+  const { isReadOnlyMode, refreshPlanInfo, shouldRecommendUpgrade } = usePlan();
   const readOnly = isReadOnlyMode();
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -80,6 +80,7 @@ const Productos = () => {
       await api.delete(`/productos/${id}`);
       toast.success('Producto eliminado correctamente');
       fetchProductos();
+      refreshPlanInfo(); // Actualizar barra de uso del plan
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error al eliminar el producto');
       console.error('Error al eliminar producto:', error);
@@ -115,9 +116,16 @@ const Productos = () => {
       await api.post('/productos', productoData);
       toast.success('Producto creado correctamente');
       fetchProductos();
+      refreshPlanInfo(); // Actualizar barra de uso del plan
       closeModal();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error al crear el producto');
+      if (error.response?.data?.code === 'LIMIT_REACHED') {
+        toast.error('Has alcanzado el límite de productos de tu plan. Mejora tu plan para agregar más.');
+      } else if (error.response?.data?.code === 'TRIAL_EXPIRED') {
+        toast.error('Tu periodo de prueba ha expirado. Por favor selecciona un plan.');
+      } else {
+        toast.error(error.response?.data?.message || 'Error al crear el producto');
+      }
       console.error('Error al crear producto:', error);
     }
   };
@@ -279,17 +287,31 @@ const filteredProductos = productos.filter(producto =>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
           Módulo de Productos
         </Typography>
-        {!readOnly && puedeCrear('productos') && (
-          <Button
-            onClick={() => openModal('crear')}
-            variant="contained"
-            color="success"
-            startIcon={<FaPlus />}
-          >
-            Crear Producto
-          </Button>
-        )}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Indicador de uso del límite del plan */}
+          <UsageIndicator resourceType="productos" showProgress={true} size="medium" />
+
+          {!readOnly && puedeCrear('productos') && (
+            <LimitedButton
+              resourceType="productos"
+              onClick={() => openModal('crear')}
+              variant="contained"
+              color="success"
+              startIcon={<FaPlus />}
+              showUsage={false}
+            >
+              Crear Producto
+            </LimitedButton>
+          )}
+        </Box>
       </Box>
+
+      {/* Recomendación de upgrade si está cerca del límite */}
+      {shouldRecommendUpgrade() && (
+        <Box sx={{ mb: 3 }}>
+          <UpgradeRecommendation />
+        </Box>
+      )}
 
       {/* Controles de búsqueda y paginación */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>

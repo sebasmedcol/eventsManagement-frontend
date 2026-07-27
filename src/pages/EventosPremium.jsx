@@ -32,7 +32,7 @@ import {
 import { FaPlus, FaEdit, FaTrash, FaCogs } from 'react-icons/fa';
 import AuthContext from '../context/AuthContext';
 import { usePlan } from '../context/planContext';
-import { TrialExpiredBanner } from '../components/plan';
+import { TrialExpiredBanner, UsageIndicator, LimitedButton, UpgradeRecommendation } from '../components/plan';
 import api from '../services/api';
 import {
   fetchEventosPremium,
@@ -44,7 +44,7 @@ import {
 
 const EventosPremium = () => {
   const { user } = useContext(AuthContext);
-  const { canAccessModule, isReadOnlyMode } = usePlan();
+  const { canAccessModule, isReadOnlyMode, refreshPlanInfo, shouldRecommendUpgrade } = usePlan();
   const navigate = useNavigate();
 
   // Usa plansConfig como única fuente de verdad.
@@ -168,11 +168,18 @@ const EventosPremium = () => {
         const res = await createEventoPremium(payload);
         setEventos((prev) => [...prev, res.data]);
         toast.success('Evento creado');
+        refreshPlanInfo(); // Actualizar barra de uso del plan
       }
 
       closeModal();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error al guardar el evento');
+      if (error.response?.data?.code === 'LIMIT_REACHED') {
+        toast.error('Has alcanzado el límite de eventos de tu plan. Mejora tu plan para agregar más.');
+      } else if (error.response?.data?.code === 'TRIAL_EXPIRED') {
+        toast.error('Tu periodo de prueba ha expirado. Por favor selecciona un plan.');
+      } else {
+        toast.error(error.response?.data?.message || 'Error al guardar el evento');
+      }
       console.error(error);
     }
   };
@@ -183,6 +190,7 @@ const EventosPremium = () => {
       await deleteEventoPremium(evento._id);
       setEventos((prev) => prev.filter((e) => e._id !== evento._id));
       toast.success('Evento eliminado');
+      refreshPlanInfo(); // Actualizar barra de uso del plan
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error al eliminar el evento');
       console.error(error);
@@ -237,12 +245,30 @@ const EventosPremium = () => {
         <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
           Eventos (Premium)
         </Typography>
-        {!readOnly && (
-          <Button variant="contained" startIcon={<FaPlus />} onClick={openCreate}>
-            Nuevo evento
-          </Button>
-        )}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Indicador de uso del límite del plan */}
+          <UsageIndicator resourceType="eventos" showProgress={true} size="medium" />
+
+          {!readOnly && (
+            <LimitedButton
+              resourceType="eventos"
+              variant="contained"
+              startIcon={<FaPlus />}
+              onClick={openCreate}
+              showUsage={false}
+            >
+              Nuevo evento
+            </LimitedButton>
+          )}
+        </Box>
       </Box>
+
+      {/* Recomendación de upgrade si está cerca del límite */}
+      {shouldRecommendUpgrade() && (
+        <Box sx={{ mb: 2 }}>
+          <UpgradeRecommendation />
+        </Box>
+      )}
 
       <Paper sx={{ p: 2 }}>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
