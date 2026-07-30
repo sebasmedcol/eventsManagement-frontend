@@ -9,6 +9,7 @@ import Navbar from './components/Navbar';
 import PermanentSidebar from './components/PermanentSidebar';
 import CustomCursor from './components/CustomCursor';
 import { TrialModal, FreePlanUpgradeModal } from './components/plan';
+import SubscriptionBanner from './components/billing/SubscriptionBanner';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Container from '@mui/material/Container';
@@ -39,6 +40,7 @@ import EmpresaPendiente from './pages/EmpresaPendiente';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import Configuraciones from './pages/Configuraciones';
 import Planes from './pages/Planes';
+import Suscripcion from './pages/Suscripcion';
 import Checkout from './pages/Checkout';
 import PagoExito from './pages/PagoExito';
 import PagoError from './pages/PagoError';
@@ -228,6 +230,8 @@ function App() {
               >
                 {/* Marca de agua global detras del contenido */}
                 <GlobalWatermark />
+                
+                <SubscriptionBanner />
 
                 <AppContent>
                   <Container maxWidth={false} disableGutters sx={{ py: 2, px: 0 }} className="with-watermark-content">
@@ -383,6 +387,11 @@ function App() {
                       <Route path="/planes" element={
                         <ProtectedRoute>
                           <Planes />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/suscripcion" element={
+                        <ProtectedRoute>
+                          <Suscripcion />
                         </ProtectedRoute>
                       } />
                       <Route path="/checkout" element={

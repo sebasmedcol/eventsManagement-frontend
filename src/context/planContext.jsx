@@ -172,11 +172,28 @@ export const PlanProvider = ({ children }) => {
   }, [planInfo]);
 
   /**
-   * Modo solo lectura: trial expirado → el usuario puede VER pero no crear/editar/eliminar
+   * Verifica si el pago está vencido (past_due)
+   */
+  const isPaymentPastDue = useCallback(() => {
+    return planInfo?.estadoSuscripcion === 'past_due';
+  }, [planInfo]);
+
+  /**
+   * Verifica si requiere accion de pago (trial expirado, past_due o expirada)
+   */
+  const requiresPaymentAction = useCallback(() => {
+    return planInfo?.requiereAccionPago === true;
+  }, [planInfo]);
+
+  /**
+   * Modo solo lectura: trial expirado, suscripción expirada o cancelada.
+   * También se considera read-only si past_due superó el período de gracia (esto lo valida el backend,
+   * pero en el frontend podemos basarnos en si la acción de pago es requerida y si la API retorna 403,
+   * o simplemente si el estado es 'expirada').
    */
   const isReadOnlyMode = useCallback(() => {
-    return isTrialExpired();
-  }, [isTrialExpired]);
+    return isTrialExpired() || planInfo?.estadoSuscripcion === 'expirada' || planInfo?.estadoSuscripcion === 'cancelada';
+  }, [isTrialExpired, planInfo]);
 
   /**
    * Obtiene los dias restantes del periodo actual del plan.
@@ -257,6 +274,13 @@ export const PlanProvider = ({ children }) => {
     isReadOnlyMode,
     getTrialDaysRemaining,
     trialInfo: planInfo?.trial || null,
+    
+    // Suscripción y facturación
+    estadoSuscripcion: planInfo?.estadoSuscripcion || 'activa',
+    fechaProximoCobro: planInfo?.fechaProximoCobro || null,
+    autoRenovacion: planInfo?.autoRenovacion || false,
+    isPaymentPastDue,
+    requiresPaymentAction,
     
     // Upgrade
     shouldRecommendUpgrade,

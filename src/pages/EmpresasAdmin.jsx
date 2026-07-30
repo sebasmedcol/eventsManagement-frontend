@@ -162,7 +162,9 @@ const EmpresasAdmin = () => {
                   <TableCell>NIT</TableCell>
                   <TableCell>Email</TableCell>
                   <TableCell>Plan</TableCell>
-                  <TableCell>Estado</TableCell>
+                  <TableCell>Estado Plan</TableCell>
+                  <TableCell>Próx. Cobro</TableCell>
+                  <TableCell>Validación</TableCell>
                   <TableCell>Acceso</TableCell>
                   <TableCell>Creación</TableCell>
                   <TableCell align="right">Acciones</TableCell>
@@ -182,6 +184,21 @@ const EmpresasAdmin = () => {
                     <TableCell>{empresa.nit}</TableCell>
                     <TableCell>{empresa.email}</TableCell>
                     <TableCell>{empresa.plan}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={empresa.estadoSuscripcion || 'activa'}
+                        color={
+                          empresa.estadoSuscripcion === 'past_due' ? 'warning' :
+                          empresa.estadoSuscripcion === 'expirada' || empresa.estadoSuscripcion === 'cancelada' ? 'error' : 'success'
+                        }
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {empresa.fechaProximoCobro
+                        ? new Date(empresa.fechaProximoCobro).toLocaleDateString('es-CO')
+                        : '-'}
+                    </TableCell>
                     <TableCell>
                       <Chip
                         label={empresa.estadoAprobacion || 'aprobada'}

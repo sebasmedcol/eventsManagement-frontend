@@ -178,13 +178,18 @@ const Planes = () => {
 
       {/* Plan actual */}
       {currentPlan && (
-        <Box sx={{ mb: 4, textAlign: 'center' }}>
+        <Box sx={{ mb: 4, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
           <Chip
             label={`Tu plan actual: ${currentPlan.nombre}`}
             color="primary"
             size="large"
             sx={{ fontSize: '1rem', py: 2, px: 2 }}
           />
+          {currentPlan.id !== 'free_trial' && currentPlan.id !== 'super' && (
+            <Button variant="outlined" onClick={() => navigate('/suscripcion')}>
+              Gestionar suscripción
+            </Button>
+          )}
         </Box>
       )}
 
