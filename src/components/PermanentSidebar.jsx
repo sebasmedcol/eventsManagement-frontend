@@ -10,7 +10,7 @@ import {
   Box, List, ListItem, ListItemIcon, ListItemText,
   Drawer, Tooltip, styled, Chip, Typography, alpha,
 } from '@mui/material';
-import { Lock as LockIcon } from '@mui/icons-material';
+import { Lock as LockIcon, WarningRounded as WarningIcon } from '@mui/icons-material';
 
 // ─── Estilos ─────────────────────────────────────────────────────────────────
 // Efecto de "pintado": al pasar el mouse, el fondo del item se rellena de
@@ -290,62 +290,77 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
 
         {/* Badge del plan actual */}
         {/*
-          Nota: CollapsibleLabel define overflow:hidden + white-space:nowrap
-          para animar el colapso de los ítems del menú. Al reutilizarlo aquí,
-          eso convertía este bloque en un flex-item "encogible" (overflow
-          distinto de visible resetea su min-height automático a 0), por lo
-          que en ventanas con poca altura el layout flex-column terminaba
-          comprimiéndolo para cederle espacio a la lista de menú, ocultando
-          el texto de "días restantes". Se fuerza flexShrink: 0 para que este
-          bloque siempre reserve su espacio real, y se permite el wrap del
-          texto para que sea responsive en vez de recortarse.
+          Este bloque solo se renderiza cuando el sidebar NO está comprimido.
+          Antes se dejaba montado permanentemente (con overflow:visible +
+          whiteSpace:normal) para que el texto de "días restantes" no se
+          recortara, pero eso mismo hacía que, al comprimir el sidebar a 72px,
+          el texto envolviera en muchas líneas dentro de ese ancho angosto y
+          dejara un espaciado vertical enorme. Al ocultarlo por completo en
+          modo comprimido (igual que ocurre con las etiquetas de cada ítem
+          del menú) se evita ese desbordamiento.
         */}
-        <CollapsibleLabel
-          collapsed={collapsed}
-          sx={{
-            display: 'block',
-            width: '100%',
-            flexShrink: 0,
-            overflow: 'visible',
-            whiteSpace: 'normal',
-          }}
-        >
-          {currentPlan && (
-            <Box sx={{ p: { xs: 1.25, sm: 2 }, textAlign: 'center', borderBottom: 1, borderColor: 'divider' }}>
+        {!collapsed && currentPlan && (
+          <Box
+            sx={{
+              p: { xs: 1.25, sm: 2 },
+              textAlign: 'center',
+              borderBottom: 1,
+              borderColor: 'divider',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 0.75,
+            }}
+          >
+            <Chip
+              label={isSuperAdmin ? 'SuperAdmin' : `Plan ${currentPlan.nombre}`}
+              color={
+                isSuperAdmin ? 'error'
+                : currentPlan.id === 'premium' ? 'success'
+                : currentPlan.id === 'pro' ? 'primary'
+                : 'default'
+              }
+              size="small"
+              sx={{ fontWeight: 'bold', maxWidth: '100%' }}
+            />
+            {!isSuperAdmin && isTrialExpired() && (
               <Chip
-                label={isSuperAdmin ? 'SuperAdmin' : `Plan ${currentPlan.nombre}`}
-                color={
-                  isSuperAdmin ? 'error'
-                  : currentPlan.id === 'premium' ? 'success'
-                  : currentPlan.id === 'pro' ? 'primary'
-                  : 'default'
-                }
+                icon={<WarningIcon fontSize="small" />}
+                label="Trial expirado"
+                color="error"
                 size="small"
                 sx={{ fontWeight: 'bold', maxWidth: '100%' }}
               />
-              {!isSuperAdmin && isTrialExpired() && (
-                <Typography
-                  variant="caption"
-                  display="block"
+            )}
+            {!isSuperAdmin && !isTrialExpired() && Number.isFinite(diasRestantesPlan) && (
+              diasRestantesPlan <= 0 ? (
+                <Chip
+                  icon={<WarningIcon fontSize="small" />}
+                  label="Plan vencido"
                   color="error"
-                  sx={{ mt: 0.5, whiteSpace: 'normal', wordBreak: 'break-word' }}
-                >
-                  Trial expirado
-                </Typography>
-              )}
-              {!isSuperAdmin && !isTrialExpired() && Number.isFinite(diasRestantesPlan) && (
+                  size="small"
+                  sx={{ fontWeight: 'bold', maxWidth: '100%' }}
+                />
+              ) : (
                 <Typography
                   variant="caption"
                   display="block"
-                  color="text.secondary"
-                  sx={{ mt: 0.5, whiteSpace: 'normal', wordBreak: 'break-word' }}
+                  fontWeight={diasRestantesPlan < 5 ? 700 : 500}
+                  sx={{
+                    color:
+                      diasRestantesPlan >= 10 ? 'success.main'
+                      : diasRestantesPlan >= 5 ? 'warning.main'
+                      : 'error.main',
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                  }}
                 >
                   {diasRestantesPlan} {diasRestantesPlan === 1 ? 'día restante' : 'días restantes'}
                 </Typography>
-              )}
-            </Box>
-          )}
-        </CollapsibleLabel>
+              )
+            )}
+          </Box>
+        )}
 
         {/* Ítems del menú + botón "Ver Planes" — ambos dentro de la misma
             zona con scroll, para que el botón nunca quede fuera de vista
