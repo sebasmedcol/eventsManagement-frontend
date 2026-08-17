@@ -26,12 +26,32 @@ export const PlanProvider = ({ children }) => {
     try { const raw = localStorage.getItem(PLAN_INFO_CACHE_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; }
   }, []);
 
-  const fetchPlanInfo = useCallback(async () => {
+  const fetchPlanInfo = useCallback(async ({ fromPayment = false } = {}) => {
     if (!isAuthenticated) { setLoading(false); return; }
     try {
       setLoading(true); setError(null);
+      // Si se llama tras un pago, limpiar caché antes de la petición para
+      // evitar que los datos vencidos disparen el modal de bloqueo.
+      if (fromPayment) {
+        try { localStorage.removeItem(PLAN_INFO_CACHE_KEY); } catch { /* ignore */ }
+        initialBlockCheckedRef.current = false;
+      }
       const response = await api.get('/config/plan-info');
-      if (response.data.success) { setPlanInfo(response.data.data); persistCache(response.data.data); }
+      if (response.data.success) {
+        const newPlanInfo = response.data.data;
+        setPlanInfo(newPlanInfo);
+        persistCache(newPlanInfo);
+        // Si el plan ahora está activo (acceso no bloqueado) cerrar el modal
+        // de bloqueo automáticamente (para el flujo post-pago exitoso).
+        const bloqueado = newPlanInfo?.acceso?.bloqueado === true ||
+          newPlanInfo?.estadoSuscripcion === 'expirada' ||
+          newPlanInfo?.estadoSuscripcion === 'cancelada' ||
+          newPlanInfo?.trial?.expirado === true;
+        if (!bloqueado) {
+          setShowBlockModal(false);
+          setServerBlock(null);
+        }
+      }
     } catch (err) {
       console.error('Error al obtener informacion del plan:', err);
       setError(err.response?.data?.message || 'Error al cargar informacion del plan');
@@ -204,6 +224,7 @@ export const PlanProvider = ({ children }) => {
     shouldRecommendUpgrade, getUpgradeRecommendation,
     formatLimitUsage, getUsageColor,
     refreshPlanInfo: fetchPlanInfo,
+    refreshPlanInfoAfterPayment: () => fetchPlanInfo({ fromPayment: true }),
   };
 
   return <PlanContext.Provider value={value}>{children}</PlanContext.Provider>;

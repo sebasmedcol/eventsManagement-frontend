@@ -14,7 +14,7 @@ export default function ThreeDSChallenge({
   onComplete,
   onError,
   pollingInterval = 2500,
-  pollingTimeout = 120000,
+  pollingTimeout = 300000,
 }) {
   const [threeDsAuth, setThreeDsAuth] = useState(initialThreeDsAuth);
   const [status, setStatus] = useState('PENDING');
@@ -24,6 +24,7 @@ export default function ThreeDSChallenge({
   const [lastStep, setLastStep] = useState(initialThreeDsAuth?.current_step || null);
   const [lastStepStatus, setLastStepStatus] = useState(initialThreeDsAuth?.current_step_status || null);
   const cancelledRef = useRef(false);
+  const isSandboxSimulator = Boolean(iframeHtml && iframeHtml.includes('3DS SANDBOX'));
 
   const processAuth = useCallback((auth, txStatus) => {
     if (!auth) return;
@@ -89,10 +90,10 @@ export default function ThreeDSChallenge({
       {showMcLogo && (
         <Alert severity="info" sx={{ mb: 2 }}>
           <Typography variant="body2" fontWeight={600}>
-            Autenticando tu transacción de forma segura (3D Secure)
+            Estamos validando tu pago de forma segura
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Verificación protegida por Mastercard Identity Check
+            Sigue las instrucciones de verificación que indique tu banco.
           </Typography>
         </Alert>
       )}
@@ -101,18 +102,12 @@ export default function ThreeDSChallenge({
         <Alert severity="info" sx={{ mb: 2 }}>
           <Stack spacing={1}>
             <Typography variant="body2">
-              <strong>Estado transacción:</strong> {status}
+              Estamos revisando el estado de tu pago. Esto puede tardar unos segundos.
             </Typography>
-            {lastStep && (
-              <Typography variant="body2">
-                <strong>Paso 3DS:</strong> {lastStep}
-                {lastStepStatus ? ` (${lastStepStatus})` : ''}
-              </Typography>
-            )}
             {asyncPaymentUrl && (
               <>
                 <Typography variant="body2">
-                  Wompi entregó una URL asíncrona de autenticación como respaldo.
+                  Si la verificación no se abre automáticamente, puedes continuarla en una nueva pestaña.
                 </Typography>
                 <Box>
                   <Button
@@ -122,7 +117,7 @@ export default function ThreeDSChallenge({
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    Abrir autenticación en nueva pestaña
+                    Abrir verificación en nueva pestaña
                   </Button>
                 </Box>
               </>
@@ -135,7 +130,7 @@ export default function ThreeDSChallenge({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 2 }}>
           <CircularProgress size={28} />
           <Typography variant="body2">
-            Procesando autenticación 3D Secure… ({status})
+            Validando tu pago de forma segura...
           </Typography>
         </Box>
       )}
@@ -145,6 +140,12 @@ export default function ThreeDSChallenge({
           <Typography variant="body2" sx={{ mb: 1 }}>
             Completa la verificación de tu banco en el siguiente recuadro:
           </Typography>
+          {isSandboxSimulator && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              En este simulador de pruebas de Wompi debes elegir una respuesta manual:
+              `Approved` para aprobar, `Declined` para rechazo o `Error` para simular un fallo.
+            </Alert>
+          )}
           <Box
             component="iframe"
             title="3DS Challenge"

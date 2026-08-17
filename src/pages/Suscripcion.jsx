@@ -21,16 +21,30 @@ import {
   DialogActions,
   Divider,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  Alert,
+  Stack,
+  Tooltip,
 } from '@mui/material';
 import { usePlan } from '../context/planContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { toast } from 'react-toastify';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
+import PaymentIcon from '@mui/icons-material/Payment';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 const Suscripcion = () => {
-  const { currentPlan, estadoSuscripcion, fechaProximoCobro, autoRenovacion, loading, refreshPlanInfo } = usePlan();
+  const {
+    currentPlan,
+    estadoSuscripcion,
+    fechaProximoCobro,
+    autoRenovacion,
+    loading,
+    refreshPlanInfo,
+    requiresPaymentAction,
+  } = usePlan();
   const navigate = useNavigate();
   
   const [pagos, setPagos] = useState([]);
@@ -93,6 +107,26 @@ const Suscripcion = () => {
     }
   };
 
+  const handleConciliar = async () => {
+    try {
+      setProcesando(true);
+      const { data } = await api.post('/subscriptions/reconcile', { minutosAtras: 15, forzar: true });
+      toast.success(
+        data.data?.error > 0
+          ? `Conciliación ejecutada (${data.data?.error || 0} con error)`
+          : 'Conciliación ejecutada correctamente.'
+      );
+      await Promise.all([refreshPlanInfo(), (async () => {
+        const r = await api.get('/subscriptions/payments');
+        if (r.data.success) setPagos(r.data.data);
+      })()]);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Error al conciliar pagos.');
+    } finally {
+      setProcesando(false);
+    }
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -102,12 +136,70 @@ const Suscripcion = () => {
   }
 
   const isTrial = currentPlan?.id === 'free_trial';
+  const isPaid = !isTrial && currentPlan && currentPlan?.id !== 'super';
+  const requiereAccionPorContexto = typeof requiresPaymentAction === 'function' ? requiresPaymentAction() : false;
+  const esRequierePago =
+    ['past_due', 'expirada', 'cancelada', 'pendiente_pago'].includes(estadoSuscripcion) ||
+    (isPaid && requiereAccionPorContexto);
+  const esActiva = estadoSuscripcion === 'activa';
+  const esVencida = ['past_due', 'expirada', 'cancelada'].includes(estadoSuscripcion);
+  const esPeriodoVencidoConEstadoActivo = esRequierePago && esActiva;
+
+  const estadoChipColor = (estado) => {
+    if (esPeriodoVencidoConEstadoActivo) return 'warning';
+    if (estado === 'activa') return 'success';
+    if (estado === 'past_due' || estado === 'pendiente_pago') return 'warning';
+    return 'error';
+  };
+
+  const etiquetaEstado = () => {
+    if (esPeriodoVencidoConEstadoActivo) return 'VENCIDO';
+    return estadoSuscripcion?.toUpperCase();
+  };
+
+  const mensajeAlertaEstado = () => {
+    if (estadoSuscripcion === 'past_due') return 'Tu pago del mes está pendiente. Actualiza o paga ahora para mantener el acceso completo a tus funciones.';
+    if (estadoSuscripcion === 'expirada') return 'Tu suscripción expiró. Realiza el pago para reactivar tu plan y recuperar todas las funciones.';
+    if (estadoSuscripcion === 'cancelada') return 'Tu renovación automática fue cancelada y el período finalizó. Renueva ahora para continuar con tu plan.';
+    if (estadoSuscripcion === 'pendiente_pago') return 'Tienes un intento de pago pendiente o iniciado. Puedes pagar ahora o volver a intentarlo.';
+    if (esPeriodoVencidoConEstadoActivo) return 'Tu período actual ya venció. Aunque el estado todavía figure como activo, ya necesitas renovar para seguir usando el plan normalmente.';
+    return '';
+  };
+
+  const etiquetaAccionPago = () => {
+    if (estadoSuscripcion === 'expirada' || estadoSuscripcion === 'cancelada') return 'Reactivar y Pagar Ahora';
+    if (estadoSuscripcion === 'past_due') return 'Pagar Ahora — Pago Vencido';
+    if (estadoSuscripcion === 'pendiente_pago') return 'Completar Pago Ahora';
+    if (esPeriodoVencidoConEstadoActivo) return 'Renovar y Pagar Ahora';
+    return 'Pagar Ahora';
+  };
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Typography variant="h4" fontWeight="bold" gutterBottom>
         Gestión de Suscripción
       </Typography>
+
+      {isPaid && (esVencida || esPeriodoVencidoConEstadoActivo) && (
+        <Alert severity="error" icon={<WarningAmberIcon />} sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" fontWeight="bold">
+            {estadoSuscripcion === 'past_due'
+              ? 'Pago vencido'
+              : esPeriodoVencidoConEstadoActivo
+                ? 'Plan vencido'
+                : 'Suscripción inactiva'}
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 0.5 }}>
+            {mensajeAlertaEstado()}
+          </Typography>
+        </Alert>
+      )}
+
+      {isPaid && estadoSuscripcion === 'pendiente_pago' && (
+        <Alert severity="warning" icon={<WarningAmberIcon />} sx={{ mb: 3 }}>
+          <Typography variant="body2">{mensajeAlertaEstado()}</Typography>
+        </Alert>
+      )}
 
       <Paper sx={{ p: 4, mb: 4, borderRadius: 3 }}>
         <Grid container spacing={4}>
@@ -120,16 +212,13 @@ const Suscripcion = () => {
                 {currentPlan?.nombre}
               </Typography>
               <Chip 
-                label={estadoSuscripcion?.toUpperCase()} 
-                color={
-                  estadoSuscripcion === 'activa' ? 'success' : 
-                  estadoSuscripcion === 'past_due' ? 'warning' : 'error'
-                } 
+                label={etiquetaEstado()}
+                color={estadoChipColor(estadoSuscripcion)}
                 size="small" 
               />
             </Box>
 
-            {!isTrial && (
+            {isPaid && (
               <Box sx={{ mt: 3 }}>
                 <Typography variant="subtitle2" color="text.secondary">
                   Renovación Automática
@@ -137,12 +226,20 @@ const Suscripcion = () => {
                 <FormControlLabel
                   control={
                     <Switch 
-                      checked={autoRenovacion} 
+                      checked={autoRenovacion && esActiva} 
                       onChange={handleToggleRenovacion}
-                      disabled={procesando || estadoSuscripcion === 'cancelada' || estadoSuscripcion === 'expirada'} 
+                      disabled={procesando || !esActiva || esRequierePago}
                     />
                   }
-                  label={autoRenovacion ? 'Activada' : 'Desactivada'}
+                  label={
+                    esRequierePago
+                      ? 'Disponible luego de pagar'
+                      : !esActiva
+                      ? (estadoSuscripcion === 'expirada' || estadoSuscripcion === 'cancelada')
+                        ? 'Disponible luego de reactivar'
+                        : 'Disponible luego de pagar'
+                      : (autoRenovacion ? 'Activada' : 'Desactivada')
+                  }
                 />
               </Box>
             )}
@@ -151,7 +248,7 @@ const Suscripcion = () => {
           <Grid item xs={12} md={6}>
             <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2, height: '100%' }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                {isTrial ? 'Período de Prueba' : 'Próximo Cobro'}
+                {isTrial ? 'Período de Prueba' : (esRequierePago ? 'Último estado del cobro' : 'Próximo Cobro')}
               </Typography>
               
               <Typography variant="h6" fontWeight="bold">
@@ -161,46 +258,104 @@ const Suscripcion = () => {
                 }
               </Typography>
 
-              {!isTrial && (
+              {isPaid && (
                 <Typography variant="body2" sx={{ mt: 1 }}>
                   Monto: <strong>${(currentPlan?.precio || 0).toLocaleString('es-CO')} COP</strong>
                 </Typography>
               )}
 
-              <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
-                {!isTrial ? (
-                  <Button 
-                    variant="outlined" 
-                    startIcon={<CreditCardIcon />}
-                    onClick={() => navigate(`/checkout?plan=${currentPlan?.id}`)}
-                  >
-                    Actualizar Tarjeta
-                  </Button>
-                ) : (
+              <Stack spacing={2} sx={{ mt: 3 }}>
+                {isTrial && (
                   <Button 
                     variant="contained" 
                     color="primary"
                     onClick={() => navigate('/planes')}
+                    fullWidth
                   >
                     Adquirir Plan
                   </Button>
                 )}
-              </Box>
+
+                {isPaid && (
+                  <>
+                    {esRequierePago ? (
+                      <Button
+                        variant="contained"
+                        color={estadoSuscripcion === 'expirada' || estadoSuscripcion === 'cancelada' ? 'error' : 'warning'}
+                        startIcon={<PaymentIcon />}
+                        onClick={() => navigate(`/checkout?plan=${currentPlan?.id}&mode=renovar`)}
+                        size="large"
+                        fullWidth
+                        sx={{ fontWeight: 'bold' }}
+                      >
+                        {etiquetaAccionPago()}
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="outlined" 
+                        startIcon={<CreditCardIcon />}
+                        onClick={() => navigate(`/checkout?plan=${currentPlan?.id}&mode=update_card`)}
+                        fullWidth
+                      >
+                        Actualizar Tarjeta
+                      </Button>
+                    )}
+
+                    {esRequierePago ? (
+                      <Tooltip
+                        arrow
+                        title="Revisa en Wompi si hay pagos pendientes o desactualizados y sincroniza el estado real de tu suscripción. No realiza un cobro nuevo."
+                      >
+                        <span>
+                          <Button
+                            variant="text"
+                            startIcon={<RefreshIcon />}
+                            onClick={handleConciliar}
+                            disabled={procesando}
+                            size="small"
+                            sx={{ alignSelf: 'flex-start' }}
+                          >
+                            Reconciliar pagos pendientes
+                          </Button>
+                        </span>
+                      </Tooltip>
+                    ) : null}
+                  </>
+                )}
+              </Stack>
             </Box>
           </Grid>
         </Grid>
-        <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+        <Box sx={{ mt: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
           <Button variant="text" onClick={() => navigate('/planes')}>
             {isTrial ? 'Ver Planes' : 'Cambiar Plan (Upgrade/Downgrade)'}
           </Button>
         </Box>
       </Paper>
 
-      {!isTrial && (
+      {isPaid && (
         <Paper sx={{ p: 4, borderRadius: 3 }}>
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Historial de Pagos
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" fontWeight="bold">
+              Historial de Pagos
+            </Typography>
+            <Tooltip
+              arrow
+              title="Vuelve a consultar en Wompi el estado de pagos pendientes o inconsistentes y actualiza este historial. No intenta cobrar otra vez."
+            >
+              <span>
+                <Button
+                  size="small"
+                  variant="text"
+                  startIcon={<RefreshIcon />}
+                  onClick={handleConciliar}
+                  disabled={procesando}
+                >
+                  Conciliar pendientes
+                </Button>
+              </span>
+            </Tooltip>
+          </Box>
           {loadingPagos ? (
             <CircularProgress size={24} sx={{ my: 2 }} />
           ) : pagos.length === 0 ? (

@@ -19,8 +19,8 @@ export default function PagoError() {
           Estado: {status}
         </Typography>
         <Alert severity="warning" sx={{ mb: 3, textAlign: 'left' }}>
-          Si el error está relacionado con 3D Secure no habilitado, copia el mensaje de error del
-          checkout y ábrelo como ticket en soporte Wompi con la evidencia.
+          No pudimos completar el pago. Puedes intentarlo de nuevo o usar otro método de pago si
+          el banco rechazó la verificación.
         </Alert>
         <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
           <Button variant="contained" onClick={() => navigate(`/checkout?plan=${planId}`)}>

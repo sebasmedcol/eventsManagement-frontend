@@ -7,12 +7,20 @@ import { usePlan } from '../context/planContext';
 export default function PagoExito() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { refreshPlanInfo } = usePlan();
+  const { refreshPlanInfoAfterPayment } = usePlan();
   const renewal = params.get('renewal');
 
   useEffect(() => {
-    refreshPlanInfo();
-  }, [refreshPlanInfo]);
+    // Limpia la caché vieja y refresca con los nuevos datos del plan activo.
+    refreshPlanInfoAfterPayment();
+  }, [refreshPlanInfoAfterPayment]);
+
+  const handleGoToDashboard = async () => {
+    // Asegurarse de que el plan esté refrescado antes de navegar
+    // (por si el usuario llegó directo a esta URL).
+    await refreshPlanInfoAfterPayment();
+    navigate('/dashboard');
+  };
 
   return (
     <Container maxWidth="sm" sx={{ py: 6 }}>
@@ -31,8 +39,8 @@ export default function PagoExito() {
         )}
         {renewal === 'failed' && (
           <Typography color="warning.main" sx={{ mb: 2 }}>
-            El plan quedó activo, pero la auto-renovación no pudo configurarse. Podremos
-            reintentar este paso en el siguiente sprint de gestión de suscripción.
+            El plan quedó activo, pero la auto-renovación no pudo configurarse por ahora.
+            Puedes reintentar este paso más adelante desde la gestión de suscripción.
           </Typography>
         )}
         {params.get('tx') && (
@@ -41,7 +49,7 @@ export default function PagoExito() {
           </Typography>
         )}
         <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-          <Button variant="contained" onClick={() => navigate('/dashboard')}>
+          <Button variant="contained" onClick={handleGoToDashboard}>
             Ir al dashboard
           </Button>
           <Button variant="outlined" onClick={() => navigate('/planes')}>

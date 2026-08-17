@@ -68,6 +68,11 @@ const esModuloConfiguracion = (nombre) => normalizeStr(nombre) === 'configuracio
 const moduloEstaDisponible = (modulo) =>
   esModuloConfiguracion(modulo?.nombre) ? true : modulo?.disponible === true;
 
+const formatPlanAmount = (price) =>
+  `$${new Intl.NumberFormat('es-CO', {
+    maximumFractionDigits: 0,
+  }).format(price || 0)}`;
+
 const Planes = () => {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -303,10 +308,10 @@ const Planes = () => {
                       ) : (
                         <>
                           <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
-                            ${plan.precio}
+                            {formatPlanAmount(plan.precio)}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            /mes
+                            COP / mes
                           </Typography>
                         </>
                       )}
@@ -437,7 +442,7 @@ const Planes = () => {
                     {plan.nombre}
                   </Typography>
                   <Typography variant="h5" color="primary.main" fontWeight="bold">
-                    {plan.precio === 0 ? 'Gratis' : `$${plan.precio}/mes`}
+                    {plan.precio === 0 ? 'Gratis' : `${formatPlanAmount(plan.precio)} COP / mes`}
                   </Typography>
                 </Box>
               ))}

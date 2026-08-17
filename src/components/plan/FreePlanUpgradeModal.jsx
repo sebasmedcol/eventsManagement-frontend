@@ -13,6 +13,11 @@ import UpgradeIcon from '@mui/icons-material/Upgrade';
 import { useNavigate } from 'react-router-dom';
 import { usePlan } from '../../context/planContext';
 
+const formatPlanPrice = (price) =>
+  `$${new Intl.NumberFormat('es-CO', {
+    maximumFractionDigits: 0,
+  }).format(price || 0)} COP`;
+
 /**
  * Modal promocional para usuarios en el plan Free.
  *
@@ -117,7 +122,7 @@ const FreePlanUpgradeModal = () => {
             {recomendacion.planNombre && (
               <>
                 Prueba <strong>{recomendacion.planNombre}</strong>
-                {recomendacion.precio != null ? ` por solo $${recomendacion.precio}/mes` : ''}.
+                {recomendacion.precio != null ? ` por solo ${formatPlanPrice(recomendacion.precio)}/mes` : ''}.
               </>
             )}
           </Typography>

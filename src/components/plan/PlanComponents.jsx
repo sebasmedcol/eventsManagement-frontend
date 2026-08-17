@@ -19,7 +19,12 @@ import {
   Info as InfoIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
-import { usePlan } from '../../context/PlanContext';
+import { usePlan } from '../../context/planContext';
+
+const formatPlanPrice = (price) =>
+  `$${new Intl.NumberFormat('es-CO', {
+    maximumFractionDigits: 0,
+  }).format(price || 0)} COP`;
 
 /**
  * Componente que envuelve contenido y lo restringe basado en acceso a modulos
@@ -343,7 +348,7 @@ export const UpgradeRecommendation = ({ variant = 'outlined' }) => {
             {recommendation.razon}
           </Typography>
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            Actualiza a <strong>{recommendation.planNombre}</strong> por solo ${recommendation.precio}/mes
+            Actualiza a <strong>{recommendation.planNombre}</strong> por solo {formatPlanPrice(recommendation.precio)}/mes
           </Typography>
           <Button 
             variant="contained" 

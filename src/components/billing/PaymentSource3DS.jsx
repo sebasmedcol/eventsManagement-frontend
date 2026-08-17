@@ -74,12 +74,10 @@ export default function PaymentSource3DS({
     <Box sx={{ mt: 2 }}>
       <Alert severity="info" sx={{ mb: 2 }}>
         <Typography variant="body2" fontWeight={600}>
-          Configurando tu método de auto-renovación
+          Configurando tu método de pago para futuras renovaciones
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          Estado: {status}
-          {threeDsAuth?.current_step ? ` · Paso 3DS: ${threeDsAuth.current_step}` : ''}
-          {threeDsAuth?.current_step_status ? ` (${threeDsAuth.current_step_status})` : ''}
+          Estamos validando tu tarjeta para dejar lista la renovación automática.
         </Typography>
       </Alert>
 
@@ -87,7 +85,7 @@ export default function PaymentSource3DS({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 2 }}>
           <CircularProgress size={28} />
           <Typography variant="body2">
-            Preparando autenticación 3DS de la fuente de pago… ({status})
+            Preparando la verificación segura de tu tarjeta...
           </Typography>
         </Box>
       )}

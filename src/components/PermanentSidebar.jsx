@@ -277,7 +277,7 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
           borderRight: (theme) => `1px solid ${theme.palette.divider}`,
           top: '64px',
           height: 'calc(100% - 64px)',
-          overflowX: 'hidden',
+          overflow: 'hidden',
           transition: 'width 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
         },
         width: currentWidth,
@@ -286,22 +286,21 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
       }}
       open
     >
-      <Box sx={{ width: currentWidth, height: '100%', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
+      <Box
+        sx={{
+          width: currentWidth,
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
 
-        {/* Badge del plan actual */}
-        {/*
-          Este bloque solo se renderiza cuando el sidebar NO está comprimido.
-          Antes se dejaba montado permanentemente (con overflow:visible +
-          whiteSpace:normal) para que el texto de "días restantes" no se
-          recortara, pero eso mismo hacía que, al comprimir el sidebar a 72px,
-          el texto envolviera en muchas líneas dentro de ese ancho angosto y
-          dejara un espaciado vertical enorme. Al ocultarlo por completo en
-          modo comprimido (igual que ocurre con las etiquetas de cada ítem
-          del menú) se evita ese desbordamiento.
-        */}
+        {/* Badge del plan actual (no scrolleable) */}
         {!collapsed && currentPlan && (
           <Box
             sx={{
+              flexShrink: 0,
               p: { xs: 1.25, sm: 2 },
               textAlign: 'center',
               borderBottom: 1,
@@ -362,9 +361,7 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
           </Box>
         )}
 
-        {/* Ítems del menú + botón "Ver Planes" — ambos dentro de la misma
-            zona con scroll, para que el botón nunca quede fuera de vista
-            cuando el listado de módulos es largo. */}
+        {/* Sección SCROLLEABLE: solo ítems de módulos */}
         <Box
           className="app-scrollbar"
           sx={{
@@ -372,8 +369,6 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
             minHeight: 0,
             overflowX: 'hidden',
             overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
           }}
         >
           <List sx={{ py: 1 }}>
@@ -430,11 +425,21 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
               ) : content;
             })}
           </List>
+        </Box>
 
-          {/* Botón "Ver Planes" — solo para el admin principal y no para SuperAdmin */}
-          {!isSuperAdmin && user?.esAdminPrincipal && (
-            <CollapsibleLabel collapsed={collapsed} sx={{ display: 'block', width: '100%', mt: 'auto' }}>
-              <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+        {/* Botón FIJO "Ver Planes" en la parte inferior (admin principal, no SuperAdmin) */}
+        {!isSuperAdmin && user?.esAdminPrincipal && (
+          <Box
+            sx={{
+              flexShrink: 0,
+              borderTop: 1,
+              borderColor: 'divider',
+              p: 2,
+              bgcolor: 'background.default',
+            }}
+          >
+            {collapsed ? (
+              <Tooltip title="Ver Planes" placement="right">
                 <StyledListItem
                   button
                   component={RouterLink}
@@ -442,19 +447,48 @@ const PermanentSidebar = ({ width = 240, collapsed = false }) => {
                   sx={{
                     bgcolor: 'primary.main',
                     color: 'white',
+                    justifyContent: 'center',
+                    margin: '0 auto',
+                    width: `calc(${currentWidth}px - 16px)`,
+                    minHeight: 44,
                     '&:hover': { bgcolor: 'primary.dark' },
                     '&::before': { display: 'none' },
                   }}
                 >
-                  <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 0,
+                      width: '100%',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      color: 'inherit',
+                    }}
+                  >
                     <FaCrown size={20} />
                   </ListItemIcon>
-                  <ListItemText primary="Ver Planes" primaryTypographyProps={{ fontWeight: 'bold' }} />
                 </StyledListItem>
-              </Box>
-            </CollapsibleLabel>
-          )}
-        </Box>
+              </Tooltip>
+            ) : (
+              <StyledListItem
+                button
+                component={RouterLink}
+                to="/planes"
+                sx={{
+                  bgcolor: 'primary.main',
+                  color: 'white',
+                  '&:hover': { bgcolor: 'primary.dark' },
+                  '&::before': { display: 'none' },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
+                  <FaCrown size={20} />
+                </ListItemIcon>
+                <ListItemText primary="Ver Planes" primaryTypographyProps={{ fontWeight: 'bold' }} />
+              </StyledListItem>
+            )}
+          </Box>
+        )}
       </Box>
     </Drawer>
   );
