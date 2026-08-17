@@ -122,7 +122,7 @@ export default function Checkout() {
 
     try {
       const newAcceptance = await getAcceptanceTokens();
-      
+
       const newToken = await tokenizeCard({
         number: card.number,
         expMonth: card.expMonth,
@@ -151,7 +151,7 @@ export default function Checkout() {
       console.error(err);
       toast.warn(
         err.response?.data?.message ||
-          'El plan quedó activo, pero la auto-renovación no pudo configurarse todavía.'
+        'El plan quedó activo, pero la auto-renovación no pudo configurarse todavía.'
       );
       await goToSuccess('failed', txId);
     }
@@ -402,14 +402,14 @@ export default function Checkout() {
                 initialThreeDsAuth={initialThreeDsAuth}
                 onComplete={handle3DSComplete}
                 onError={(err) => {
-                    if (err.message?.includes('Tiempo de espera agotado')) {
-                      toast.warn(
-                        'La verificación sigue pendiente. Si estás en sandbox, elige Approved, Declined o Error dentro del simulador de Wompi.'
-                      );
-                      return;
-                    }
-                    toast.error(err.message);
-                    navigate(`/pago/error?plan=${planId}&tx=${transactionId}`);
+                  if (err.message?.includes('Tiempo de espera agotado')) {
+                    toast.warn(
+                      'La verificación sigue pendiente. Si estás en sandbox, elige Approved, Declined o Error dentro del simulador de Wompi.'
+                    );
+                    return;
+                  }
+                  toast.error(err.message);
+                  navigate(`/pago/error?plan=${planId}&tx=${transactionId}`);
                 }}
               />
             ) : step === STEPS.PAYMENT_SOURCE && paymentSourceId ? (
