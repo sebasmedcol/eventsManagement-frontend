@@ -26,3 +26,8 @@ export const deleteVenta = async (id) => {
   const response = await api.delete(`${ENDPOINT}/${id}`);
   return response.data;
 };
+
+export const getVentasArchivables = async () => (await api.get(`${ENDPOINT}/archivables`)).data;
+export const archivarVentas = async () => (await api.post(`${ENDPOINT}/archivar`)).data;
+export const getAniosArchivados = async () => (await api.get(`${ENDPOINT}/archivadas/anios`)).data;
+export const getVentasArchivadas = async (anio) => (await api.get(`${ENDPOINT}/archivadas`, { params: { anio } })).data;

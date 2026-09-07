@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaPlus, FaEdit, FaTrash, FaSearch, FaEye, FaBan } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaSearch, FaEye, FaBan, FaArchive } from 'react-icons/fa';
 import api from '../services/api';
+import { getVentasArchivables, archivarVentas } from '../services/ventaService';
 import { toast } from 'react-toastify';
 import usePermisos from '../hooks/usePermisos';
 import { usePlan } from '../context/PlanContext';
@@ -49,10 +50,36 @@ const Ventas = () => {
   const [selectedVenta, setSelectedVenta] = useState(null);
   const [modalAnularOpen, setModalAnularOpen] = useState(false);
   const [selectedVentaAnular, setSelectedVentaAnular] = useState(null);
+  const [archivableCount, setArchivableCount] = useState(0);
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const currentYear = new Date().getFullYear();
 
   useEffect(() => {
     fetchVentas();
+    fetchArchivableCount();
   }, []);
+
+  const fetchArchivableCount = async () => {
+    try {
+      const data = await getVentasArchivables();
+      setArchivableCount(data.cantidad || 0);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error al verificar ventas archivables');
+    }
+  };
+
+  const handleArchive = async () => {
+    try {
+      const data = await archivarVentas();
+      toast.success(`${data.archivadas} ventas archivadas correctamente`);
+      setArchiveDialogOpen(false);
+      setArchivableCount(0);
+      refreshPlanInfo();
+      await fetchVentas();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error al archivar las ventas');
+    }
+  };
 
   const openModalAnular = (venta) => {
   setSelectedVentaAnular(venta);
@@ -187,6 +214,19 @@ const fetchVentas = async () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {/* Indicador de uso del límite del plan */}
           <UsageIndicator resourceType="ventas" showProgress={true} size="medium" />
+
+          <Button component={Link} to="/ventas/archivadas" variant="outlined" startIcon={<FaArchive />}>
+            Archivadas
+          </Button>
+          <Button
+            variant="outlined"
+            color="warning"
+            startIcon={<FaArchive />}
+            disabled={archivableCount === 0 || readOnly || !puedeEditar('ventas')}
+            onClick={() => setArchiveDialogOpen(true)}
+          >
+            Archivar
+          </Button>
 
           {!readOnly && puedeCrear('ventas') && (
             <LimitedButton
@@ -394,6 +434,19 @@ color={venta.estado === 'activa' ? 'success' : 'error'}
       </Paper>
 
       {/* Modal de Eliminación */}
+      <Dialog open={archiveDialogOpen} onClose={() => setArchiveDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Archivar ventas</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Todas la ventas anteriores al año {currentYear} seran archivadas, en total se archivaran {archivableCount} ¿desea continuar?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setArchiveDialogOpen(false)}>Cancelar</Button>
+          <Button onClick={handleArchive} variant="contained" color="warning">Sí</Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog open={modalOpen} onClose={closeModal} maxWidth="sm" fullWidth>
         <DialogTitle>
           Confirmar Eliminación

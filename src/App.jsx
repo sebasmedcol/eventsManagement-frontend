@@ -24,6 +24,7 @@ import ClienteForm from './pages/ClienteForm';
 import Productos from './pages/Productos';
 import ProductoForm from './pages/ProductoForm';
 import Ventas from './pages/Ventas';
+import VentasArchivadas from './pages/VentasArchivadas';
 import VentaForm from './pages/VentaForm';
 import VentaDetalle from './pages/VentaDetalle';
 import Eventos from './pages/Eventos';
@@ -295,6 +296,11 @@ function App() {
                       <Route path="/ventas" element={
                         <ProtectedRoute requiredPermission={{ modulo: 'ventas', accion: 'ver' }}>
                           <Ventas />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/ventas/archivadas" element={
+                        <ProtectedRoute requiredPermission={{ modulo: 'ventas', accion: 'ver' }}>
+                          <VentasArchivadas />
                         </ProtectedRoute>
                       } />
                       <Route path="/ventas/nueva" element={
