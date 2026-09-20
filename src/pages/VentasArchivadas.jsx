@@ -15,6 +15,18 @@ const VentasArchivadas = () => {
     getAniosArchivados().then((data) => setAnios(Array.isArray(data) ? data : (data.anios || []))).catch(() => toast.error('No se pudieron cargar los años archivados'));
   }, []);
 
+  const formatCurrency = (value) => new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+  }).format(Number(value) || 0);
+
+  const formatDate = (value) => new Date(value).toLocaleDateString('es-CO', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
   const cargarVentas = async (value) => {
     setAnio(value);
     setVentas([]);
@@ -40,7 +52,7 @@ const VentasArchivadas = () => {
         {anios.map((year) => <MenuItem key={year} value={year}>{year}</MenuItem>)}
       </Select>
     </Paper>
-    {loading ? <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}><CircularProgress /></Box> : anio && <TableContainer component={Paper}><Table><TableHead><TableRow><TableCell>Fecha</TableCell><TableCell>Cliente</TableCell><TableCell>Total</TableCell><TableCell>Estado</TableCell></TableRow></TableHead><TableBody>{ventas.map((venta) => <TableRow key={venta._id}><TableCell>{new Date(venta.fecha).toLocaleDateString()}</TableCell><TableCell>{venta.cliente?.nombre || venta.clienteNombre || '—'}</TableCell><TableCell>{venta.total ?? venta.totalVenta ?? 0}</TableCell><TableCell>{venta.estado || '—'}</TableCell></TableRow>)}</TableBody></Table></TableContainer>}
+    {loading ? <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}><CircularProgress /></Box> : anio && <TableContainer component={Paper}><Table><TableHead><TableRow><TableCell>Fecha</TableCell><TableCell>Cliente</TableCell><TableCell>Total</TableCell></TableRow></TableHead><TableBody>{ventas.map((venta) => <TableRow key={venta._id}><TableCell>{formatDate(venta.fecha)}</TableCell><TableCell>{venta.cliente?.nombreCompleto || venta.clienteNombre || '—'}</TableCell><TableCell>{formatCurrency(venta.totalPagar)}</TableCell></TableRow>)}</TableBody></Table></TableContainer>}
   </Container>;
 };
 
