@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaEdit, FaPrint } from 'react-icons/fa';
 import api from '../services/api';
 import { toast } from 'react-toastify';
-import { usePlan } from '../context/PlanContext';
+import { usePlan } from '../context/planContext';
 import {
   Box,
   Typography,

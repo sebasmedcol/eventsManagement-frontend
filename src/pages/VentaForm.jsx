@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FaSave, FaArrowLeft, FaPlus, FaTrash } from 'react-icons/fa';
 import api from '../services/api';
 import { toast } from 'react-toastify';
-import { usePlan } from '../context/PlanContext';
+import { usePlan } from '../context/planContext';
 import {
   Box,
   Typography,
@@ -586,8 +586,8 @@ const VentaForm = () => {
       
       navigate('/ventas');
     } catch (error) {
-      if (error.response?.data?.code === 'LIMIT_REACHED') {
-        toast.error('Has alcanzado el límite de ventas de tu plan. Mejora tu plan para agregar más.');
+      if (['LIMIT_REACHED', 'ACTIVE_LIMIT_REACHED', 'PERIOD_CREATION_LIMIT_REACHED'].includes(error.response?.data?.code)) {
+        toast.error(error.response?.data?.message || 'No puedes registrar más ventas con tu plan actual.');
       } else if (error.response?.data?.code === 'TRIAL_EXPIRED') {
         toast.error('Tu periodo de prueba ha expirado. Por favor selecciona un plan.');
       } else {

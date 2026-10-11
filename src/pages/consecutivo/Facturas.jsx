@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaSearch, FaEye } from 'react-icons/fa';
 import api from '../../services/api';
 import { toast } from 'react-toastify';
-import { usePlan } from '../../context/PlanContext';
+import { usePlan } from '../../context/planContext';
 import { TrialExpiredBanner } from '../../components/plan';
 import {
   Box,

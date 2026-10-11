@@ -194,8 +194,10 @@ export const UsageIndicator = ({
   const limitInfo = checkLimit(resourceType);
   const usageText = formatLimitUsage(resourceType);
   const usageColor = getUsageColor(resourceType);
+  const hasActiveMetric = limitInfo.activeLimit != null;
+  const hasPeriodMetric = limitInfo.periodLimit != null;
   
-  if (limitInfo.unlimited) {
+  if (limitInfo.unlimited || (limitInfo.activeUnlimited && !hasPeriodMetric)) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         {showLabel && (
@@ -238,17 +240,65 @@ export const UsageIndicator = ({
           {usageText}
         </Typography>
       </Box>
-      {showProgress && (
-        <LinearProgress
-          variant="determinate"
-          value={Math.min(limitInfo.percentage, 100)}
-          color={usageColor}
-          sx={{
-            height: size === 'small' ? 4 : 6,
-            borderRadius: 1,
-            bgcolor: 'grey.200',
-          }}
-        />
+      {showProgress && hasActiveMetric && (
+        <Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
+            <Typography variant="caption" color="text.secondary">
+              Activos
+            </Typography>
+            <Typography variant="caption" color={getColorValue(usageColor)}>
+              {limitInfo.activeUnlimited ? 'Ilimitado' : `${limitInfo.activeCount}/${limitInfo.activeLimit}`}
+            </Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={Math.min(limitInfo.activePercentage || 0, 100)}
+            color={
+              limitInfo.activeUnlimited
+                ? 'success'
+                : limitInfo.activePercentage >= 100
+                ? 'error'
+                : limitInfo.activePercentage >= 80
+                ? 'warning'
+                : 'success'
+            }
+            sx={{
+              height: size === 'small' ? 4 : 6,
+              borderRadius: 1,
+              bgcolor: 'grey.200',
+            }}
+          />
+        </Box>
+      )}
+      {showProgress && hasPeriodMetric && (
+        <Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
+            <Typography variant="caption" color="text.secondary">
+              Periodo
+            </Typography>
+            <Typography variant="caption" color={getColorValue(usageColor)}>
+              {limitInfo.periodUnlimited ? 'Ilimitado' : `${limitInfo.periodUsage}/${limitInfo.periodLimit}`}
+            </Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={Math.min(limitInfo.periodPercentage || 0, 100)}
+            color={
+              limitInfo.periodUnlimited
+                ? 'success'
+                : limitInfo.periodPercentage >= 100
+                ? 'error'
+                : limitInfo.periodPercentage >= 80
+                ? 'warning'
+                : 'success'
+            }
+            sx={{
+              height: size === 'small' ? 4 : 6,
+              borderRadius: 1,
+              bgcolor: 'grey.200',
+            }}
+          />
+        </Box>
       )}
     </Box>
   );

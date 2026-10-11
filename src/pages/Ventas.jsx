@@ -5,7 +5,7 @@ import api from '../services/api';
 import { getVentasArchivables, archivarVentas } from '../services/ventaService';
 import { toast } from 'react-toastify';
 import usePermisos from '../hooks/usePermisos';
-import { usePlan } from '../context/PlanContext';
+import { usePlan } from '../context/planContext';
 import { TrialExpiredBanner, UsageIndicator, LimitedButton, UpgradeRecommendation } from '../components/plan';
 import {
   Box,

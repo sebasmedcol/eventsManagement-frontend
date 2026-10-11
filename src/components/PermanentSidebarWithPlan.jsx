@@ -42,7 +42,7 @@ import {
   Upgrade as UpgradeIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { usePlan } from '../context/PlanContext';
+import { usePlan } from '../context/planContext';
 import { PlanBadge, UsageSummary } from '../components/plan';
 
 const DRAWER_WIDTH = 260;

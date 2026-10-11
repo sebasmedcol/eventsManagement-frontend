@@ -173,8 +173,8 @@ const EventosPremium = () => {
 
       closeModal();
     } catch (error) {
-      if (error.response?.data?.code === 'LIMIT_REACHED') {
-        toast.error('Has alcanzado el límite de eventos de tu plan. Mejora tu plan para agregar más.');
+      if (['LIMIT_REACHED', 'ACTIVE_LIMIT_REACHED', 'PERIOD_CREATION_LIMIT_REACHED'].includes(error.response?.data?.code)) {
+        toast.error(error.response?.data?.message || 'No puedes crear más eventos con tu plan actual.');
       } else if (error.response?.data?.code === 'TRIAL_EXPIRED') {
         toast.error('Tu periodo de prueba ha expirado. Por favor selecciona un plan.');
       } else {

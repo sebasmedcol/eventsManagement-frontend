@@ -4,7 +4,7 @@ import { FaPlus, FaEdit, FaTrash, FaSearch, FaEye } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import api from '../services/api';
 import usePermisos from '../hooks/usePermisos';
-import { usePlan } from '../context/PlanContext';
+import { usePlan } from '../context/planContext';
 import { LimitedButton, UsageIndicator, PlanRestricted, UpgradeRecommendation, TrialExpiredBanner } from '../components/plan';
 import {
   Box,
@@ -156,8 +156,8 @@ const Clientes = () => {
       closeModal();
     } catch (error) {
       // Manejar errores especificos de plan
-      if (error.response?.data?.code === 'LIMIT_REACHED') {
-        toast.error(`Has alcanzado el limite de clientes de tu plan. Mejora tu plan para agregar mas.`);
+      if (['LIMIT_REACHED', 'ACTIVE_LIMIT_REACHED', 'PERIOD_CREATION_LIMIT_REACHED'].includes(error.response?.data?.code)) {
+        toast.error(error.response?.data?.message || 'No puedes crear más clientes con tu plan actual.');
       } else if (error.response?.data?.code === 'TRIAL_EXPIRED') {
         toast.error('Tu periodo de prueba ha expirado. Por favor selecciona un plan.');
       } else {

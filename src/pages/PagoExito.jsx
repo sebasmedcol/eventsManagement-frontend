@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Box, Typography, Button, Paper, Container } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
@@ -9,16 +9,29 @@ export default function PagoExito() {
   const [params] = useSearchParams();
   const { refreshPlanInfoAfterPayment } = usePlan();
   const renewal = params.get('renewal');
+  const [countdown, setCountdown] = useState(7);
 
   useEffect(() => {
-    // Limpia la caché vieja y refresca con los nuevos datos del plan activo.
+    // Limpia la caché y actualiza la información del plan en segundo plano sin congelar la interfaz.
     refreshPlanInfoAfterPayment();
   }, [refreshPlanInfoAfterPayment]);
 
-  const handleGoToDashboard = async () => {
-    // Asegurarse de que el plan esté refrescado antes de navegar
-    // (por si el usuario llegó directo a esta URL).
-    await refreshPlanInfoAfterPayment();
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          navigate('/dashboard');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [navigate]);
+
+  const handleGoToDashboard = () => {
     navigate('/dashboard');
   };
 
@@ -48,6 +61,11 @@ export default function PagoExito() {
             Transacción: {params.get('tx')}
           </Typography>
         )}
+
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3, fontStyle: 'italic' }}>
+          Redirigiendo automáticamente al dashboard en {countdown} segundos...
+        </Typography>
+
         <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
           <Button variant="contained" onClick={handleGoToDashboard}>
             Ir al dashboard

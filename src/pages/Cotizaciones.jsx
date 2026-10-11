@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { FaPlus, FaExchangeAlt, FaEye, FaEdit, FaPrint } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import usePermisos from '../hooks/usePermisos';
-import { usePlan } from '../context/PlanContext';
+import { usePlan } from '../context/planContext';
 import { TrialExpiredBanner, UsageIndicator, LimitedButton, UpgradeRecommendation } from '../components/plan';
 import {
   Box,
@@ -22,6 +22,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogContentText,
   DialogActions,
   TextField,
   Grid,
@@ -55,6 +56,8 @@ const Cotizaciones = () => {
   const [openVer, setOpenVer] = useState(false);
   const [cotizacionVer, setCotizacionVer] = useState(null);
   const [loadingVer, setLoadingVer] = useState(false);
+  const [cotizacionRechazar, setCotizacionRechazar] = useState(null);
+  const [loadingRechazar, setLoadingRechazar] = useState(false);
 
   const [formNueva, setFormNueva] = useState({
     cliente: '',
@@ -232,14 +235,14 @@ const Cotizaciones = () => {
       }
       setOpenNueva(false);
     } catch (error) {
-      if (error.response?.data?.code === 'LIMIT_REACHED') {
-        toast.error('Has alcanzado el límite de cotizaciones de tu plan. Mejora tu plan para agregar más.');
+      if (['LIMIT_REACHED', 'ACTIVE_LIMIT_REACHED', 'PERIOD_CREATION_LIMIT_REACHED'].includes(error.response?.data?.code)) {
+        toast.error(error.response?.data?.message || 'No puedes crear más cotizaciones con tu plan actual.');
       } else if (error.response?.data?.code === 'TRIAL_EXPIRED') {
         toast.error('Tu periodo de prueba ha expirado. Por favor selecciona un plan.');
       } else {
         toast.error(
           error.response?.data?.message ||
-            (editingCotizacionId ? 'Error al actualizar la cotización' : 'Error al crear la cotización')
+          (editingCotizacionId ? 'Error al actualizar la cotización' : 'Error al crear la cotización')
         );
       }
       console.error('Error guardar cotización:', error);
@@ -283,21 +286,35 @@ const Cotizaciones = () => {
     }
   };
 
-  const handleRechazar = async (cotizacion) => {
+  const handleOpenRechazar = (cotizacion) => {
+    setCotizacionRechazar(cotizacion);
+  };
+
+  const handleCloseRechazar = () => {
+    if (!loadingRechazar) {
+      setCotizacionRechazar(null);
+    }
+  };
+
+  const handleConfirmRechazar = async () => {
+    if (!cotizacionRechazar) return;
     try {
-      if (!window.confirm('¿Marcar esta cotización como rechazada?')) return;
-      const actualizada = await updateCotizacion(cotizacion._id, {
+      setLoadingRechazar(true);
+      const actualizada = await updateCotizacion(cotizacionRechazar._id, {
         estado: 'rechazada',
       });
       setCotizaciones((prev) =>
         prev.map((c) => (c._id === actualizada._id ? actualizada : c))
       );
       toast.success('Cotización marcada como rechazada');
+      setCotizacionRechazar(null);
     } catch (error) {
       toast.error(
         error.response?.data?.message || 'Error al actualizar la cotización'
       );
       console.error('Error actualizar cotización:', error);
+    } finally {
+      setLoadingRechazar(false);
     }
   };
 
@@ -451,7 +468,7 @@ const Cotizaciones = () => {
                               size="small"
                               color="error"
                               variant="outlined"
-                              onClick={() => handleRechazar(c)}
+                              onClick={() => handleOpenRechazar(c)}
                             >
                               Rechazar
                             </Button>
@@ -701,6 +718,53 @@ const Cotizaciones = () => {
             </Button>
           )}
           <Button onClick={handleCloseVer}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal de confirmación para rechazar cotización */}
+      <Dialog
+        open={Boolean(cotizacionRechazar)}
+        onClose={handleCloseRechazar}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 600 }}>¿Rechazar cotización?</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 1.5 }}>
+            ¿Estás seguro de que deseas marcar esta cotización como <strong>rechazada</strong>?
+          </DialogContentText>
+          {cotizacionRechazar && (
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 1,
+                bgcolor: 'action.hover',
+                border: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                <strong>Cliente:</strong> {cotizacionRechazar.cliente?.nombreCompleto || 'Sin cliente'}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Total:</strong> ${Number(cotizacionRechazar.total || 0).toFixed(2)}
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={handleCloseRechazar} disabled={loadingRechazar} color="inherit">
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleConfirmRechazar}
+            color="error"
+            variant="contained"
+            disabled={loadingRechazar}
+            startIcon={loadingRechazar ? <CircularProgress size={16} color="inherit" /> : null}
+          >
+            {loadingRechazar ? 'Rechazando...' : 'Rechazar'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>

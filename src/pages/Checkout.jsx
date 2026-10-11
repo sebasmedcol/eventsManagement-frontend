@@ -90,11 +90,18 @@ export default function Checkout() {
     const load = async () => {
       try {
         setLoading(true);
-        const [preview, tokens, checkout] = await Promise.all([
+        const [preview, tokens] = await Promise.all([
           getCheckoutPreview(planId),
           getAcceptanceTokens(),
-          initiateCheckout(planId),
         ]);
+
+        if (preview?.planChange?.allowed === false && preview?.planChange?.changeType === 'downgrade') {
+          toast.error(preview.planChange.message || 'No puedes cambiar al plan seleccionado todavía.');
+          navigate('/planes');
+          return;
+        }
+
+        const checkout = await initiateCheckout(planId);
         setPlanPreview(preview);
         setAcceptance(tokens);
         setCheckoutData(checkout);

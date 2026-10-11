@@ -36,7 +36,7 @@ import {
   FileDownload as ExportIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
-import { usePlan } from '../context/PlanContext';
+import { usePlan } from '../context/planContext';
 import { 
   LimitedButton, 
   UsageIndicator, 

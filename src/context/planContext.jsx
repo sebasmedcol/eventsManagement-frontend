@@ -155,13 +155,57 @@ export const PlanProvider = ({ children }) => {
   const checkLimit = useCallback((resourceType) => {
     const blocked = isAccessBlocked();
     if (!planInfo?.limites || !planInfo.limites[resourceType]) {
-      return { canCreate: !blocked, limit: -1, current: 0, remaining: null, percentage: 0, unlimited: !blocked };
+      return {
+        canCreate: !blocked,
+        limit: -1,
+        current: 0,
+        remaining: null,
+        percentage: 0,
+        unlimited: !blocked,
+        activeCount: 0,
+        activeLimit: -1,
+        activeUnlimited: true,
+        remainingActive: null,
+        activePercentage: 0,
+        periodUsage: null,
+        periodLimit: null,
+        periodUnlimited: false,
+        remainingPeriod: null,
+        periodPercentage: 0,
+        usageModel: 'simple',
+      };
     }
     const limitInfo = planInfo.limites[resourceType];
+    const activeCount = limitInfo.activeCount ?? limitInfo.current ?? 0;
+    const activeLimit = limitInfo.activeLimit ?? limitInfo.limit ?? -1;
+    const activeUnlimited = limitInfo.activeUnlimited ?? limitInfo.unlimited === true;
+    const remainingActive = limitInfo.remainingActive ?? limitInfo.remaining ?? null;
+    const activePercentage = limitInfo.activePercentage ?? limitInfo.percentage ?? 0;
+    const periodUsage = limitInfo.periodUsage ?? null;
+    const periodLimit = limitInfo.periodLimit ?? null;
+    const periodUnlimited = limitInfo.periodUnlimited === true;
+    const remainingPeriod = limitInfo.remainingPeriod ?? null;
+    const periodPercentage = limitInfo.periodPercentage ?? 0;
+
     return {
       canCreate: blocked ? false : limitInfo.canCreate,
-      limit: limitInfo.limit, current: limitInfo.current, remaining: limitInfo.remaining,
-      percentage: limitInfo.percentage, unlimited: limitInfo.unlimited, displayName: limitInfo.displayName,
+      limit: limitInfo.limit,
+      current: limitInfo.current,
+      remaining: limitInfo.remaining,
+      percentage: limitInfo.percentage,
+      unlimited: limitInfo.unlimited,
+      displayName: limitInfo.displayName,
+      usageModel: limitInfo.usageModel || 'simple',
+      activeCount,
+      activeLimit,
+      activeUnlimited,
+      remainingActive,
+      activePercentage,
+      periodUsage,
+      periodLimit,
+      periodUnlimited,
+      remainingPeriod,
+      periodPercentage,
     };
   }, [planInfo, isAccessBlocked]);
 
@@ -187,7 +231,13 @@ export const PlanProvider = ({ children }) => {
     const b = getBlockInfo(); if (b) return b.mensaje;
     const displayName = limitInfo.displayName || resourceType;
     const planNombre = planInfo?.plan?.nombre || 'actual';
-    return `Has alcanzado el limite de ${displayName} para tu plan ${planNombre} (${limitInfo.current}/${limitInfo.limit}). Mejora tu plan para agregar mas.`;
+    if (!limitInfo.activeUnlimited && limitInfo.activeCount >= limitInfo.activeLimit) {
+      return `Has alcanzado el límite de ${displayName} activos para tu plan ${planNombre} (${limitInfo.activeCount}/${limitInfo.activeLimit}). Desactiva registros o mejora tu plan para continuar.`;
+    }
+    if (limitInfo.periodUsage != null && !limitInfo.periodUnlimited && limitInfo.periodUsage >= limitInfo.periodLimit) {
+      return `Ya consumiste el cupo disponible de ${displayName} para este período (${limitInfo.periodUsage}/${limitInfo.periodLimit}). Debes esperar la renovación o mejorar tu plan.`;
+    }
+    return `Has alcanzado el límite de ${displayName} para tu plan ${planNombre}. Mejora tu plan para continuar.`;
   }, [checkLimit, getBlockInfo, planInfo]);
 
   const isTrialActive = useCallback(() => (planInfo?.trial ? !planInfo.trial.expirado : false), [planInfo]);
@@ -204,8 +254,45 @@ export const PlanProvider = ({ children }) => {
 
   const shouldRecommendUpgrade = useCallback(() => planInfo?.upgrade?.recomendado === true, [planInfo]);
   const getUpgradeRecommendation = useCallback(() => planInfo?.upgrade || null, [planInfo]);
-  const formatLimitUsage = useCallback((r) => { const l = checkLimit(r); return l.unlimited ? 'Ilimitado' : `${l.current}/${l.limit}`; }, [checkLimit]);
-  const getUsageColor = useCallback((r) => { const l = checkLimit(r); if (l.unlimited) return 'success'; if (l.percentage >= 100) return 'error'; if (l.percentage >= 80) return 'warning'; return 'success'; }, [checkLimit]);
+  const formatLimitUsage = useCallback((r) => {
+    const l = checkLimit(r);
+    const parts = [];
+
+    if (l.activeLimit != null) {
+      parts.push(
+        l.activeUnlimited
+          ? 'Act ilimitado'
+          : `Act ${l.activeCount}/${l.activeLimit}`
+      );
+    }
+
+    if (l.periodLimit != null) {
+      parts.push(
+        l.periodUnlimited
+          ? 'Per ilimitado'
+          : `Per ${l.periodUsage}/${l.periodLimit}`
+      );
+    }
+
+    if (parts.length === 0) {
+      return l.unlimited ? 'Ilimitado' : `${l.current}/${l.limit}`;
+    }
+
+    return parts.join(' · ');
+  }, [checkLimit]);
+
+  const getUsageColor = useCallback((r) => {
+    const l = checkLimit(r);
+    if (l.unlimited || (l.activeUnlimited && (l.periodLimit == null || l.periodUnlimited))) return 'success';
+    const maxPercentage = Math.max(
+      l.activePercentage || 0,
+      l.periodPercentage || 0,
+      l.percentage || 0
+    );
+    if (maxPercentage >= 100) return 'error';
+    if (maxPercentage >= 80) return 'warning';
+    return 'success';
+  }, [checkLimit]);
 
   const value = {
     planInfo, loading, error,

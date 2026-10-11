@@ -24,6 +24,10 @@ import {
   Paper,
   Tab,
   Tabs,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   useTheme,
   alpha,
 } from '@mui/material';
@@ -80,10 +84,12 @@ const Planes = () => {
   const [planes, setPlanes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
+  const [downgradeDialog, setDowngradeDialog] = useState(null);
 
   useEffect(() => {
+    refreshPlanInfo();
     fetchPlanes();
-  }, []);
+  }, [refreshPlanInfo, currentPlan?.id]);
 
   const fetchPlanes = async () => {
     try {
@@ -131,11 +137,35 @@ const Planes = () => {
     return value.toLocaleString();
   };
 
-  const handleSelectPlan = (planId) => {
+  const getPlanRank = (planId) => ['free_trial', 'basico', 'pro', 'premium'].indexOf(planId);
+
+  const getActionLabel = (plan) => {
+    if (plan.precio === 0) return 'Comenzar Gratis';
+    if (!currentPlan?.id) return 'Seleccionar Plan';
+    if (currentPlan.id === plan.id) return 'Plan Actual';
+    return getPlanRank(plan.id) > getPlanRank(currentPlan.id)
+      ? `Mejorar a ${plan.nombre}`
+      : `Cambiar a ${plan.nombre}`;
+  };
+
+  const handleSelectPlan = async (planId) => {
     const normalizedPlanId = planId === 'free' ? 'free_trial' : planId;
 
     if (normalizedPlanId === 'free_trial') {
       toast.info('Tu cuenta ya cuenta con flujo de prueba gratuita o plan activo.');
+      return;
+    }
+
+    try {
+      const preview = await api.get(`/subscriptions/checkout-preview/${normalizedPlanId}`);
+      const planChange = preview.data?.data?.planChange;
+
+      if (planChange?.allowed === false && planChange?.changeType === 'downgrade') {
+        setDowngradeDialog(planChange);
+        return;
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'No pudimos validar el cambio de plan.');
       return;
     }
 
@@ -411,7 +441,7 @@ const Planes = () => {
                         fontWeight: 'bold',
                       }}
                     >
-                      {isCurrentPlan ? 'Plan Actual' : plan.precio === 0 ? 'Comenzar Gratis' : 'Seleccionar Plan'}
+                      {getActionLabel(plan)}
                     </Button>
                   </CardActions>
                 </Card>
@@ -509,6 +539,34 @@ const Planes = () => {
         </Paper>
       )}
 
+
+      <Dialog open={Boolean(downgradeDialog)} onClose={() => setDowngradeDialog(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>No puedes bajar de plan todavía</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {downgradeDialog?.message || 'Superas algunos límites activos del plan destino.'}
+          </Typography>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Reduce los recursos activos que exceden el plan destino y luego vuelve a intentarlo.
+          </Alert>
+          <List dense>
+            {(downgradeDialog?.exceededResources || []).map((resource) => (
+              <ListItem key={resource.limitKey} sx={{ px: 0 }}>
+                <ListItemIcon sx={{ minWidth: 32 }}>
+                  <CloseIcon color="error" fontSize="small" />
+                </ListItemIcon>
+                <ListItemText
+                  primary={`${resource.displayName}: ${resource.currentActive} activos`}
+                  secondary={`Límite del plan ${downgradeDialog?.targetPlanNombre}: ${resource.targetActiveLimit}`}
+                />
+              </ListItem>
+            ))}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDowngradeDialog(null)}>Entendido</Button>
+        </DialogActions>
+      </Dialog>
 
     </Container>
   );
