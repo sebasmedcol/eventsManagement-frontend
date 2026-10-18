@@ -12,14 +12,15 @@ import CloseIcon from '@mui/icons-material/Close';
 import UpgradeIcon from '@mui/icons-material/Upgrade';
 import { useNavigate } from 'react-router-dom';
 import { usePlan } from '../../context/planContext';
+import { useAuth } from '../../context/AuthContext';
 
-const formatPlanPrice = (price) =>
-  `$${new Intl.NumberFormat('es-CO', {
-    maximumFractionDigits: 0,
-  }).format(price || 0)} COP`;
+
+const PROMOTION_MODAL_STORAGE_KEY = 'free_plan_promotion_last_shown';
+const PROMOTION_INTERVAL_DAYS = 30;
 
 /**
  * Modal promocional para usuarios en el plan Free.
+
  *
  * A diferencia del aviso anterior (que quedaba incrustado en la pantalla
  * sin forma de cerrarlo), este se muestra como una ventana modal con el
@@ -27,34 +28,31 @@ const formatPlanPrice = (price) =>
  * cerrar con la "X" en la esquina superior derecha.
  */
 const FreePlanUpgradeModal = () => {
-  const { currentPlan, getUpgradeRecommendation } = usePlan();
+  const { currentPlan } = usePlan();
+  const { isAuthenticated, loading: authLoading } = useAuth();
+
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (!currentPlan) return;
+    if (authLoading || !isAuthenticated) return;
 
-    let justLoggedIn = false;
+    let shouldShow = true;
     try {
-      justLoggedIn = sessionStorage.getItem('justLoggedIn') === '1';
-    } catch {
-      justLoggedIn = false;
-    }
+      const lastShownAt = Number(localStorage.getItem(PROMOTION_MODAL_STORAGE_KEY));
+      const intervalMs = PROMOTION_INTERVAL_DAYS * 24 * 60 * 60 * 1000;
+      shouldShow = !Number.isFinite(lastShownAt) || Date.now() - lastShownAt >= intervalMs;
 
-    if (justLoggedIn && currentPlan.id === 'free') {
-      setOpen(true);
-    }
-
-    // Se consume el flag para que, aunque el usuario navegue entre
-    // pantallas, el modal no reaparezca hasta el próximo inicio de sesión.
-    if (justLoggedIn) {
-      try {
-        sessionStorage.removeItem('justLoggedIn');
-      } catch {
-        /* ignore */
+      if (shouldShow) {
+        localStorage.setItem(PROMOTION_MODAL_STORAGE_KEY, String(Date.now()));
       }
+    } catch {
+      shouldShow = true;
     }
-  }, [currentPlan]);
+
+    if (shouldShow) setOpen(true);
+  }, [authLoading, isAuthenticated]);
+
 
   const handleClose = () => setOpen(false);
 
@@ -63,11 +61,11 @@ const FreePlanUpgradeModal = () => {
     navigate('/planes');
   };
 
-  if (!currentPlan || currentPlan.id !== 'free') return null;
-
-  const recomendacion = getUpgradeRecommendation?.();
+  if (!isAuthenticated) return null;
 
   return (
+
+
     <Dialog
       open={open}
       onClose={handleClose}
@@ -109,24 +107,14 @@ const FreePlanUpgradeModal = () => {
         </Avatar>
 
         <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Estás en el plan Free
+          Dale un plus a tu negocio
         </Typography>
 
-        <Typography variant="body2" color="text.secondary" sx={{ mb: recomendacion ? 1 : 3 }}>
-          Mejora tu plan para desbloquear más módulos, límites más altos y funciones avanzadas.
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          Considera usar nuestros planes de mayor capacidad para acceder a más módulos,
+          límites más altos y funciones avanzadas.
         </Typography>
 
-        {recomendacion && (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            {recomendacion.razon ? `${recomendacion.razon} ` : ''}
-            {recomendacion.planNombre && (
-              <>
-                Prueba <strong>{recomendacion.planNombre}</strong>
-                {recomendacion.precio != null ? ` por solo ${formatPlanPrice(recomendacion.precio)}/mes` : ''}.
-              </>
-            )}
-          </Typography>
-        )}
 
         <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center' }}>
           <Button variant="outlined" color="inherit" onClick={handleClose}>

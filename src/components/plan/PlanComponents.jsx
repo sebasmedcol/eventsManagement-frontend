@@ -21,10 +21,6 @@ import {
 } from '@mui/icons-material';
 import { usePlan } from '../../context/planContext';
 
-const formatPlanPrice = (price) =>
-  `$${new Intl.NumberFormat('es-CO', {
-    maximumFractionDigits: 0,
-  }).format(price || 0)} COP`;
 
 /**
  * Componente que envuelve contenido y lo restringe basado en acceso a modulos
@@ -369,51 +365,6 @@ export const TrialBanner = ({ onClose, variant = 'standard' }) => {
   return null;
 };
 
-/**
- * Card de recomendacion de upgrade
- */
-export const UpgradeRecommendation = ({ variant = 'outlined' }) => {
-  const { shouldRecommendUpgrade, getUpgradeRecommendation, currentPlan } = usePlan();
-  
-  if (!shouldRecommendUpgrade()) return null;
-  
-  const recommendation = getUpgradeRecommendation();
-  
-  return (
-    <Paper 
-      variant={variant}
-      sx={{ 
-        p: 2, 
-        bgcolor: 'primary.50',
-        borderColor: 'primary.200',
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-        <UpgradeIcon sx={{ color: 'primary.main', mt: 0.5 }} />
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
-            Listo para crecer?
-          </Typography>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            {recommendation.razon}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Actualiza a <strong>{recommendation.planNombre}</strong> por solo {formatPlanPrice(recommendation.precio)}/mes
-          </Typography>
-          <Button 
-            variant="contained" 
-            color="primary" 
-            size="small" 
-            href="/planes"
-            sx={{ mt: 1 }}
-          >
-            Ver beneficios
-          </Button>
-        </Box>
-      </Box>
-    </Paper>
-  );
-};
 
 /**
  * Tooltip con icono de informacion sobre restriccion de plan
@@ -526,6 +477,9 @@ export const UsageSummary = ({ resources = ['clientes', 'productos', 'ventas', '
     </Paper>
   );
 };
+
+// Compatibilidad con páginas antiguas: el aviso inline fue retirado.
+export const UpgradeRecommendation = () => null;
 
 // Export individual components
 export {

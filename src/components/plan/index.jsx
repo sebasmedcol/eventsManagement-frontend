@@ -6,11 +6,12 @@ export {
   UsageIndicator,
   TrialBanner,
   TrialExpiredBanner,
-  UpgradeRecommendation,
+
   PlanInfoTooltip,
   LockedIcon,
   PlanBadge,
   UsageSummary,
+  UpgradeRecommendation,
 } from './PlanComponents';
 export { default as FreePlanUpgradeModal } from './FreePlanUpgradeModal';
 export { default as TrialModal } from './TrialModal';
